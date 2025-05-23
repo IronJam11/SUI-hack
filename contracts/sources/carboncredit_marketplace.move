@@ -943,45 +943,43 @@ module 0x0::carbon_marketplace {
     ) {
         assert!(vec_map::contains(&handler.claims, &claim_id), 0);
         let claim = vec_map::get_mut(&mut handler.claims, &claim_id);
-        
-        // Ensure voting period hasn't ended
         let current_time = get_current_timestamp(clock);
         assert!(current_time <= claim.time_of_issue + claim.voting_period, 1);
         
-        // Ensure voter hasn't voted before
-        if (vec_map::contains(&handler.claim_voters, &tx_context::sender(ctx))) {
-            let voter_claims = vec_map::get(&handler.claim_voters, &tx_context::sender(ctx));
+        let sender = tx_context::sender(ctx);
+        if (vec_map::contains(&handler.claim_voters, &sender)) {
+            let voter_claims = vec_map::get(&handler.claim_voters, &sender);
             assert!(!vector::contains(voter_claims, &claim_id), 2);
         };
         
         if (vote == 1) {
             claim.yes_votes = claim.yes_votes + 1;
-            // Initialize yes voters vector if it doesn't exist
-            if (!vec_map::contains(&mut handler.claim_to_voters_yes, &claim_id)) {
+            
+            if (!vec_map::contains(&handler.claim_to_voters_yes, &claim_id)) {
                 vec_map::insert(&mut handler.claim_to_voters_yes, claim_id, vector::empty());
             };
             let voters = vec_map::get_mut(&mut handler.claim_to_voters_yes, &claim_id);
-            vector::push_back(voters, tx_context::sender(ctx));
+            vector::push_back(voters, sender);
         } else {
             claim.no_votes = claim.no_votes + 1;
-            // Initialize no voters vector if it doesn't exist
-            if (!vec_map::contains(&mut handler.claim_to_voters_no, &claim_id)) {
+            
+            if (!vec_map::contains(&handler.claim_to_voters_no, &claim_id)) {
                 vec_map::insert(&mut handler.claim_to_voters_no, claim_id, vector::empty());
             };
             let voters = vec_map::get_mut(&mut handler.claim_to_voters_no, &claim_id);
-            vector::push_back(voters, tx_context::sender(ctx));
+            vector::push_back(voters, sender);
         };
         
         claim.total_votes = claim.total_votes + 1;
-        if (!vec_map::contains(&mut handler.claim_voters, &tx_context::sender(ctx))) {
-            vec_map::insert(&mut handler.claim_voters, tx_context::sender(ctx), vector::empty());
+        if (!vec_map::contains(&handler.claim_voters, &sender)) {
+            vec_map::insert(&mut handler.claim_voters, sender, vector::empty());
         };
-        let voter_claims = vec_map::get_mut(&mut handler.claim_voters, &tx_context::sender(ctx));
+        let voter_claims = vec_map::get_mut(&mut handler.claim_voters, &sender);
         vector::push_back(voter_claims, claim_id);
         
         sui::event::emit(ClaimVoted {
             claim_id,
-            voter: tx_context::sender(ctx),
+            voter: sender,
             vote,
             current_yes: claim.yes_votes,
             current_no: claim.no_votes
