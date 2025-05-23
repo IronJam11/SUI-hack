@@ -72,11 +72,11 @@ module 0x3::carbon_marketplace {
             }
         );
     }
-    public(package) fun register_organisation(
+    entry public fun register_organisation(
         handler: &mut OrganisationHandler,
-        ctx: &mut TxContext,
         name: String, 
-        description: String
+        description: String,
+        ctx: &mut TxContext 
     ) {
         let new_org = Organisation {
             id: object::new(ctx),
@@ -103,7 +103,7 @@ module 0x3::carbon_marketplace {
             owner: tx_context::sender(ctx)
         });
     }
-    public fun change_organisation_details(
+    entry public fun change_organisation_details(
         handler: &mut OrganisationHandler,
         organisation_id: ID,
         name: String, 
