@@ -125,11 +125,11 @@ module 0x0::carbon_marketplace {
             description
         });
     }
-    public fun get_all_organisation_ids(handler: &OrganisationHandler): vector<ID> {
+    entry public fun get_all_organisation_ids(handler: &OrganisationHandler): vector<ID> {
         let keys = vec_map::keys(&handler.organisations);
         keys
     }
-    public(package) fun get_organisation_details(
+    entry public fun get_organisation_details(
         handler: &OrganisationHandler,
         organisation_id: ID
     ): (String, String, address, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
@@ -152,10 +152,10 @@ module 0x0::carbon_marketplace {
             org.reputation_score
         )
     }
-    public(package) fun get_organisation_count(handler: &OrganisationHandler): u64 {
+    public fun get_organisation_count(handler: &OrganisationHandler): u64 {
         vec_map::size(&handler.organisations)
     }
-    public fun is_organisation_owner(
+    entry public fun is_organisation_owner(
         handler: &OrganisationHandler,
         organisation_id: ID,
         ctx: &mut TxContext,
@@ -167,7 +167,7 @@ module 0x0::carbon_marketplace {
         let org = vec_map::get(&handler.organisations, &organisation_id);
         org.owner == tx_context::sender(ctx)
     }
-    public fun get_owned_organisations(
+    entry public fun get_owned_organisations(
         handler: &OrganisationHandler,
         ctx: &mut TxContext,
     ): vector<ID> {
@@ -212,15 +212,15 @@ module 0x0::carbon_marketplace {
         recommendation: u64,
     }
 
-    public fun create_lend_request(
+    entry public fun create_lend_request(
         organisation_handler: &mut OrganisationHandler,
         clock: &Clock,
         handler: &mut LendRequestHandler,
-        ctx: &mut TxContext,
         organisation_id: ID,
         requested_amount: u64,
         time_of_issue: u64,
         duration: u64,
+        ctx: &mut TxContext,
     ) {
         let org : &mut Organisation = vec_map::get_mut(&mut organisation_handler.organisations, &organisation_id);
         let dummy: String = string::utf8(b"");
@@ -262,12 +262,12 @@ module 0x0::carbon_marketplace {
         recommendation: u64,
     }
 
-    public fun payback_lend_request(
+    entry public fun payback_lend_request(
         handler: &mut LendRequestHandler, 
-        ctx: &mut TxContext,
         lend_request_id: ID,
         organisation_handler: &mut OrganisationHandler,
         clock: &Clock,
+        ctx: &mut TxContext,
     ){
         assert!(vec_map::contains(&handler.lend_requests, &lend_request_id), 0);
         let request = vec_map::get_mut(&mut handler.lend_requests, &lend_request_id);
@@ -293,12 +293,12 @@ module 0x0::carbon_marketplace {
         request.status = 3;
     }
 
-    public fun respond_to_lendRequest(
+    entry public fun respond_to_lendRequest(
         handler: &mut LendRequestHandler,  
         org_handler: &mut OrganisationHandler,
-        ctx: &mut TxContext, 
         response: u64,
         request_id: ID,
+        ctx: &mut TxContext, 
     ){
         assert!(vec_map::contains(&handler.lend_requests, &request_id), 0);
         let request = vec_map::get(&handler.lend_requests, &request_id);
@@ -329,7 +329,7 @@ module 0x0::carbon_marketplace {
         };
     }
 
-    public fun get_borrower_pov_requests(
+    entry public fun get_borrower_pov_requests(
         handler: &LendRequestHandler,
         ctx: &mut TxContext
     ): vector<LendRequestView> {
@@ -365,7 +365,7 @@ module 0x0::carbon_marketplace {
         result
     }
 
-    public fun get_lender_pov_requests(
+    entry public fun get_lender_pov_requests(
         handler: &LendRequestHandler,
         ctx: &mut TxContext
     ): vector<LendRequestView> {
@@ -400,7 +400,7 @@ module 0x0::carbon_marketplace {
         };
         result
     }
-    public fun get_lend_request_details(
+    entry public fun get_lend_request_details(
         handler: &LendRequestHandler,
         request_id: ID
     ): (ID, ID, address, address, u64, u64, u64, u64, u64, String, u64) {
@@ -423,7 +423,7 @@ module 0x0::carbon_marketplace {
         )  
     }
 
-    public fun get_lend_request_count(handler: &LendRequestHandler): u64 {
+    entry public fun get_lend_request_count(handler: &LendRequestHandler): u64 {
         vec_map::size(&handler.lend_requests)
     }
 
@@ -471,9 +471,8 @@ module 0x0::carbon_marketplace {
         voting_period: u64
     }
 
-    public fun create_claim(
+    entry public fun create_claim(
         handler: &mut ClaimHandler,
-        ctx: &mut TxContext,
         clock: &Clock,
         longitude: u64,
         latitude: u64,
@@ -481,7 +480,8 @@ module 0x0::carbon_marketplace {
         status: u64,
         ipfs_hash: String,
         description: String,
-        voting_period: u64
+        voting_period: u64,
+        ctx: &mut TxContext,
     ) {
         let new_claim = Claim {
             id: object::new(ctx),
@@ -504,7 +504,7 @@ module 0x0::carbon_marketplace {
         vector::push_back(claims, claim_id);
     }
 
-    public fun get_claim_details(
+    entry public fun get_claim_details(
         handler: &ClaimHandler,
         claim_id: ID
     ): (ID, address, u64, u64, u64, u64, String, String, u64, u64, u64, u64) {
@@ -527,10 +527,10 @@ module 0x0::carbon_marketplace {
         )
     }
 
-    public fun get_claim_count(handler: &ClaimHandler): u64 {
+    entry public fun get_claim_count(handler: &ClaimHandler): u64 {
         vec_map::size(&handler.claims)
     }
-    public fun get_claims_by_organisation(
+    entry public fun get_claims_by_organisation(
         handler: &ClaimHandler,
         ctx: &mut TxContext
     ): vector<ClaimView> {
@@ -567,7 +567,7 @@ module 0x0::carbon_marketplace {
         result
     }
     
-    public fun get_all_claims(
+    entry public fun get_all_claims(
         organisation_handler: &mut OrganisationHandler,
         handler: &mut ClaimHandler, 
         clock: &Clock,
@@ -638,11 +638,11 @@ module 0x0::carbon_marketplace {
         result
     }
 
-    public fun vote_on_a_claim(
+    entry public fun vote_on_a_claim(
         handler: &mut ClaimHandler,
-        ctx: &mut TxContext,
         claim_id: ID,
-        vote: u64
+        vote: u64,
+        ctx: &mut TxContext,
     ) {
         assert!(vec_map::contains(&handler.claims, &claim_id), 0);
         let claim = vec_map::get_mut(&mut handler.claims, &claim_id);
