@@ -5,7 +5,6 @@ module 0x0::carbon_marketplace {
     use sui::vec_map::{Self, VecMap};
     use sui::clock::{Self, Clock};
 
-
     public fun get_current_timestamp(clock: &Clock): u64 {
         clock.timestamp_ms()
     }
@@ -31,6 +30,41 @@ module 0x0::carbon_marketplace {
         times_returned: u64,
         emissions: u64,
         reputation_score: u64,
+    }
+
+    public struct OrganisationIDsEvent has copy, drop {
+        ids: vector<ID>
+    }
+
+    public struct OrganisationDetailsEvent has copy, drop {
+        organisation_id: ID,
+        name: String,
+        description: String,
+        owner: address,
+        carbon_credits: u64,
+        times_lent: u64,
+        total_lent: u64,
+        times_borrowed: u64,
+        total_borrowed: u64,
+        total_returned: u64,
+        times_returned: u64,
+        emissions: u64,
+        reputation_score: u64
+    }
+
+    public struct OrganisationCountEvent has copy, drop {
+        count: u64
+    }
+
+    public struct IsOrganisationOwnerEvent has copy, drop {
+        organisation_id: ID,
+        is_owner: bool,
+        caller: address
+    }
+
+    public struct OwnedOrganisationsEvent has copy, drop {
+        owner: address,
+        organisation_ids: vector<ID>
     }
     
     public struct OrganisationCreated has copy, drop {
@@ -72,6 +106,7 @@ module 0x0::carbon_marketplace {
             }
         );
     }
+
     entry public fun register_organisation(
         handler: &mut OrganisationHandler,
         name: String, 
@@ -103,6 +138,7 @@ module 0x0::carbon_marketplace {
             owner: tx_context::sender(ctx)
         });
     }
+
     entry public fun change_organisation_details(
         handler: &mut OrganisationHandler,
         organisation_id: ID,
@@ -125,52 +161,103 @@ module 0x0::carbon_marketplace {
             description
         });
     }
-    entry public fun get_all_organisation_ids(handler: &OrganisationHandler): vector<ID> {
-        let keys = vec_map::keys(&handler.organisations);
-        keys
+
+    entry public fun get_all_organisation_ids(
+        handler: &OrganisationHandler,
+        ctx: &mut TxContext
+    ) {
+        let ids = vec_map::keys(&handler.organisations);
+        sui::event::emit(OrganisationIDsEvent {
+            ids
+        });
     }
+
     entry public fun get_organisation_details(
         handler: &OrganisationHandler,
-        organisation_id: ID
-    ): (String, String, address, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
+        organisation_id: ID,
+        ctx: &mut TxContext
+    ) {
         assert!(vec_map::contains(&handler.organisations, &organisation_id), 0);
+        let id = organisation_id;
+        let org = vec_map::get(&handler.organisations, &id);
         
-        let org = vec_map::get(&handler.organisations, &organisation_id);
+        sui::event::emit(OrganisationDetailsEvent {
+            organisation_id,
+            name: org.name,
+            description: org.description,
+            owner: org.owner,
+            carbon_credits: org.carbon_credits,
+            times_lent: org.times_lent,
+            total_lent: org.total_lent,
+            times_borrowed: org.times_borrowed,
+            total_borrowed: org.total_borrowed,
+            total_returned: org.total_returned,
+            times_returned: org.times_returned,
+            emissions: org.emissions,
+            reputation_score: org.reputation_score
+        });
+    }
+
+    entry public fun get_my_organisation_details(
+        handler: &OrganisationHandler,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
+        assert!(vec_map::contains(&handler.wallet_addressToOrg, &sender), 0);
+        let org_id = vec_map::get(&handler.wallet_addressToOrg, &sender);
+        let id = *org_id;
+        let org = vec_map::get(&handler.organisations, &id);
         
-        (
-            org.name,
-            org.description,
-            org.owner,
-            org.carbon_credits,
-            org.times_lent,
-            org.total_lent,
-            org.times_borrowed,
-            org.total_borrowed,
-            org.total_returned,
-            org.times_returned,
-            org.emissions,
-            org.reputation_score
-        )
+        sui::event::emit(OrganisationDetailsEvent {
+            organisation_id: copy id,
+            name: org.name,
+            description: org.description,
+            owner: org.owner,
+            carbon_credits: org.carbon_credits,
+            times_lent: org.times_lent,
+            total_lent: org.total_lent,
+            times_borrowed: org.times_borrowed,
+            total_borrowed: org.total_borrowed,
+            total_returned: org.total_returned,
+            times_returned: org.times_returned,
+            emissions: org.emissions,
+            reputation_score: org.reputation_score
+        });
     }
-    public fun get_organisation_count(handler: &OrganisationHandler): u64 {
-        vec_map::size(&handler.organisations)
+
+    entry public fun get_organisation_count(
+        handler: &OrganisationHandler,
+        ctx: &mut TxContext
+    ) {
+        let count = vec_map::size(&handler.organisations);
+        sui::event::emit(OrganisationCountEvent {
+            count
+        });
     }
+
     entry public fun is_organisation_owner(
         handler: &OrganisationHandler,
         organisation_id: ID,
         ctx: &mut TxContext,
-    ): bool {
-        if (!vec_map::contains(&handler.organisations, &organisation_id)) {
-            return false
+    ) {
+        let is_owner = if (!vec_map::contains(&handler.organisations, &organisation_id)) {
+            false
+        } else {
+            let org = vec_map::get(&handler.organisations, &organisation_id);
+            org.owner == tx_context::sender(ctx)
         };
         
-        let org = vec_map::get(&handler.organisations, &organisation_id);
-        org.owner == tx_context::sender(ctx)
+        sui::event::emit(IsOrganisationOwnerEvent {
+            organisation_id,
+            is_owner,
+            caller: tx_context::sender(ctx)
+        });
     }
+
     entry public fun get_owned_organisations(
         handler: &OrganisationHandler,
         ctx: &mut TxContext,
-    ): vector<ID> {
+    ) {
         let mut result = vector::empty<ID>();
         let keys = vec_map::keys(&handler.organisations);
         let mut i = 0;
@@ -185,7 +272,11 @@ module 0x0::carbon_marketplace {
             
             i = i + 1;
         };
-        result
+        
+        sui::event::emit(OwnedOrganisationsEvent {
+            owner: tx_context::sender(ctx),
+            organisation_ids: result
+        });
     }
 
 
@@ -200,6 +291,72 @@ module 0x0::carbon_marketplace {
 
     public struct LendRequest has key, store {
         id: UID,
+        organisation_id: ID,
+        lender: address,
+        borrower: address,
+        requested_amount: u64,
+        time_of_issue: u64,
+        time_of_return: u64,
+        elgibility_score: u64,
+        status: u64,
+        proofData: String,
+        recommendation: u64,
+    }
+
+    public struct LendRequestCreated has copy, drop {
+        request_id: ID,
+        organisation_id: ID,
+        lender: address,
+        borrower: address,
+        amount: u64,
+        issue_time: u64,
+        return_time: u64
+    }
+
+    public struct LendRequestPaidBack has copy, drop {
+        request_id: ID,
+        borrower: address,
+        lender: address,
+        amount: u64,
+        return_time: u64
+    }
+
+    public struct LendRequestResponded has copy, drop {
+        request_id: ID,
+        response: u64,
+        responder: address
+    }
+
+    public struct BorrowerRequestsEvent has copy, drop {
+        borrower: address,
+        requests: vector<LendRequestView>
+    }
+
+    public struct LenderRequestsEvent has copy, drop {
+        lender: address,
+        requests: vector<LendRequestView>
+    }
+
+    public struct LendRequestDetailsEvent has copy, drop {
+        request_id: ID,
+        organisation_id: ID,
+        lender: address,
+        borrower: address,
+        requested_amount: u64,
+        time_of_issue: u64,
+        time_of_return: u64,
+        elgibility_score: u64,
+        status: u64,
+        proofData: String,
+        recommendation: u64
+    }
+
+    public struct LendRequestCountEvent has copy, drop {
+        count: u64
+    }
+
+    public struct LendRequestView has copy, drop {
+        request_id: ID,
         organisation_id: ID,
         lender: address,
         borrower: address,
@@ -246,21 +403,18 @@ module 0x0::carbon_marketplace {
         vector::push_back(borrower_requests, request_id);
         let lender_requests = vec_map::get_mut(&mut handler.lender_pov_requests, &lender_address);
         vector::push_back(lender_requests, request_id);
+        sui::event::emit(LendRequestCreated {
+            request_id,
+            organisation_id,
+            lender: lender_address,
+            borrower: borrower_address,
+            amount: requested_amount,
+            issue_time:  get_current_timestamp(clock),
+            return_time:  get_current_timestamp(clock) + duration,
+        });
     }
 
-        public struct LendRequestView has copy, drop {
-        request_id: ID,
-        organisation_id: ID,
-        lender: address,
-        borrower: address,
-        requested_amount: u64,
-        time_of_issue: u64,
-        time_of_return: u64,
-        elgibility_score: u64,
-        status: u64,
-        proofData: String,
-        recommendation: u64,
-    }
+    
 
     entry public fun payback_lend_request(
         handler: &mut LendRequestHandler, 
