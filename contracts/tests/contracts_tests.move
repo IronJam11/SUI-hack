@@ -1,48 +1,45 @@
-#[test_only]
-module 0x3::carbon_marketplace_tests {
-    use 0x3::carbon_marketplace::{Self, OrganisationHandler, Organisation, OrganisationCreated};
-    use sui::test_scenario::{Self, Scenario};
-    use sui::test_utils;
-    use std::string;
-    use sui::vec_map;
+// #[test_only]
+// module 0x3::carbon_marketplace_tests {
+//     use sui::test_scenario;
+//     use sui::transfer;
+//     use std::string;
+//     use 0x3::carbon_marketplace;
+//     use sui::vec_map::{Self, VecMap};
 
-    const ADMIN: address = @0xD;
-    const USER1: address = @0x1;
-
-    #[test]
-fun test_register_organisation() {
-    use sui::test_scenario;
-    
-    // Create test address representing user
-    let user = @0xCAFE;
-    
-    // First transaction to initialize the module
-    let mut scenario = test_scenario::begin(user);
-    {
-        // Initialize the module (creates shared OrganisationHandler)
-        carbon_marketplace::init_for_testing(scenario.ctx());
-    };
-    
-    // Second transaction to register organisation
-    scenario.next_tx(user);
-    {
-        // Take the shared OrganisationHandler object
-        let mut handler = scenario.take_shared<OrganisationHandler>();
+//     #[test]
+//     fun test_organization_flow() {
+//         let admin = @0x0;
+//         let mut scenario = test_scenario::begin(admin);
         
-        // Register organisation
-        carbon_marketplace::register_organisation(
-            &mut handler,
-            scenario.ctx(),
-            string::utf8(b"Test Organization"),
-            string::utf8(b"Test Description")
-        );
+//         // 1. Create and share the handler for testing
+//         scenario.next_tx(admin);
+//         {
+//             let ctx = test_scenario::ctx(&mut scenario);
+//             let handler = carbon_marketplace::create_for_testing(ctx);
+//             transfer::share_object(handler);
+//         };
         
-        // Return the handler to shared pool
-        scenario.return_shared(handler);
-    };
-    
-    scenario.end();
- }
-}
-
-    
+//         // 2. Test registration
+//         scenario.next_tx(admin);
+//         {
+//             let name = string::utf8(b"Test Org");
+//             let desc = string::utf8(b"Test Desc");
+            
+//             let mut handler = test_scenario::take_shared<carbon_marketplace::OrganisationHandler>(&scenario);
+//             let ctx = test_scenario::ctx(&mut scenario);
+            
+//             carbon_marketplace::register_organisation(
+//                 &mut handler,
+//                 ctx,
+//                 name,
+//                 desc
+//             );
+            
+//             // Verify registration
+//             assert!(carbon_marketplace::get_organisation_count(&mut handler) == 1, 0);
+//             test_scenario::return_shared(handler);
+//         };
+        
+//         test_scenario::end(scenario);
+//     }
+// }

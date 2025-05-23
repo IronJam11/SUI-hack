@@ -1,6 +1,5 @@
+#[allow(unused_use)]
 module 0x3::carbon_marketplace {
-    use sui::object::{Self, UID, ID};
-    use sui::tx_context::{Self, TxContext};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
     use sui::vec_map::{Self, VecMap};
@@ -73,7 +72,7 @@ module 0x3::carbon_marketplace {
             }
         );
     }
-    public fun register_organisation(
+    public(package) fun register_organisation(
         handler: &mut OrganisationHandler,
         ctx: &mut TxContext,
         name: String, 
@@ -111,6 +110,7 @@ module 0x3::carbon_marketplace {
         description: String, 
         ctx: &TxContext
     ) {
+        assert!(!vec_map::contains(&handler.wallet_addressToOrg, &tx_context::sender(ctx)), 0);
         assert!(vec_map::contains(&handler.organisations, &organisation_id), 0);
         
         let org = vec_map::get_mut(&mut handler.organisations, &organisation_id);
@@ -129,7 +129,7 @@ module 0x3::carbon_marketplace {
         let keys = vec_map::keys(&handler.organisations);
         keys
     }
-    public fun get_organisation_details(
+    public(package) fun get_organisation_details(
         handler: &OrganisationHandler,
         organisation_id: ID
     ): (String, String, address, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
@@ -152,7 +152,7 @@ module 0x3::carbon_marketplace {
             org.reputation_score
         )
     }
-    public fun get_organisation_count(handler: &OrganisationHandler): u64 {
+    public(package) fun get_organisation_count(handler: &OrganisationHandler): u64 {
         vec_map::size(&handler.organisations)
     }
     public fun is_organisation_owner(
