@@ -1,16 +1,12 @@
 module 0x3::carbon_marketplace {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
     use std::string::{Self, String};
     use sui::table::{Self, Table};
     use sui::vec_map::{Self, VecMap};
-    use std::address;
     use sui::clock::{Self, Clock};
-    use sui::event;
-    public struct TimeEvent has copy, drop, store {
-        timestamp_ms: u64,
-    }
+
+
     public fun get_current_timestamp(clock: &Clock): u64 {
         clock.timestamp_ms()
     }
@@ -57,7 +53,25 @@ module 0x3::carbon_marketplace {
                 organisations: vec_map::empty(),
                 wallet_addressToOrg: vec_map::empty(),
             }
-        )
+        );
+        transfer::share_object(
+            LendRequestHandler {
+                id: object::new(ctx),
+                lend_requests: vec_map::empty(),
+                borrower_pov_requests: vec_map::empty(),
+                lender_pov_requests: vec_map::empty(),
+            }
+        );
+        transfer::share_object(
+            ClaimHandler {
+                id: object::new(ctx),
+                claims: vec_map::empty(),
+                organisation_claims: vec_map::empty(),
+                claim_to_voters_yes: vec_map::empty(),
+                claim_to_voters_no: vec_map::empty(),
+                claim_voters: vec_map::empty(),
+            }
+        );
     }
     public fun register_organisation(
         handler: &mut OrganisationHandler,
@@ -467,7 +481,6 @@ module 0x3::carbon_marketplace {
         status: u64,
         ipfs_hash: String,
         description: String,
-        time_of_issue: u64,
         voting_period: u64
     ) {
         let new_claim = Claim {
