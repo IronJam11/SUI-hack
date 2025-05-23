@@ -574,7 +574,7 @@ import {
                 <Flex gap="3" mt="4" justify="end">
                   <Dialog.Close>
                     <Button variant="soft" color="gray">
-                      Close
+                      Closea
                     </Button>
                   </Dialog.Close>
                 </Flex>
