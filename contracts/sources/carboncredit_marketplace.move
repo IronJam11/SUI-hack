@@ -132,6 +132,7 @@ module 0x0::carbon_marketplace {
         
         let org_id = object::id(&new_org);
         vec_map::insert(&mut handler.organisations, org_id, new_org);
+        vec_map::insert(&mut handler.wallet_addressToOrg, tx_context::sender(ctx), org_id);
         sui::event::emit(OrganisationCreated {
             organisation_id: org_id,
             name,
