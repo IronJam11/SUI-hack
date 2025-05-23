@@ -445,6 +445,14 @@ module 0x0::carbon_marketplace {
         
         request.time_of_return = get_current_timestamp(clock);
         request.status = 3;
+
+        sui::event::emit(LendRequestPaidBack {
+            request_id: lend_request_id,
+            borrower: request.borrower,
+            lender: request.lender,
+            amount: request.requested_amount,
+            return_time: request.time_of_return
+        });
     }
 
     entry public fun respond_to_lendRequest(
@@ -481,106 +489,126 @@ module 0x0::carbon_marketplace {
         } else {
             request_mut.status = 2; 
         };
+        sui::event::emit(LendRequestResponded {
+            request_id,
+            response,
+            responder: sender
+        });
     }
 
     entry public fun get_borrower_pov_requests(
         handler: &LendRequestHandler,
         ctx: &mut TxContext
-    ): vector<LendRequestView> {
+    ) {
         let borrower_address = tx_context::sender(ctx);
-        if (!vec_map::contains(&handler.borrower_pov_requests, &borrower_address)) {
-            return vector::empty()
-        };
-        let request_ids = vec_map::get(&handler.borrower_pov_requests, &borrower_address);
         let mut result = vector::empty<LendRequestView>();
-        let mut i = 0;
-        let len = vector::length(request_ids);
         
-        while (i < len) {
-            let current_request_id = *vector::borrow(request_ids, i); 
-            let request_id = *vector::borrow(request_ids, i);
-            let request = vec_map::get(&handler.lend_requests,&current_request_id); 
-            let view = LendRequestView {
-                request_id: request_id, 
-                organisation_id: request.organisation_id,
-                lender: request.lender,
-                borrower: request.borrower,
-                requested_amount: request.requested_amount,
-                time_of_issue: request.time_of_issue,
-                time_of_return: request.time_of_return,
-                elgibility_score: request.elgibility_score,
-                status: request.status,
-                proofData: request.proofData,
-                recommendation: request.recommendation,
+        if (vec_map::contains(&handler.borrower_pov_requests, &borrower_address)) {
+            let request_ids = vec_map::get(&handler.borrower_pov_requests, &borrower_address);
+            let mut i = 0;
+            let len = vector::length(request_ids);
+            
+            while (i < len) {
+                let current_request_id = *vector::borrow(request_ids, i); 
+                let request_id = *vector::borrow(request_ids, i);
+                let request = vec_map::get(&handler.lend_requests, &current_request_id); 
+                let view = LendRequestView {
+                    request_id: request_id, 
+                    organisation_id: request.organisation_id,
+                    lender: request.lender,
+                    borrower: request.borrower,
+                    requested_amount: request.requested_amount,
+                    time_of_issue: request.time_of_issue,
+                    time_of_return: request.time_of_return,
+                    elgibility_score: request.elgibility_score,
+                    status: request.status,
+                    proofData: request.proofData,
+                    recommendation: request.recommendation,
+                };
+                vector::push_back(&mut result, view);
+                i = i + 1;
             };
-            vector::push_back(&mut result, view);
-            i = i + 1;
         };
-        result
+        
+        sui::event::emit(BorrowerRequestsEvent {
+            borrower: borrower_address,
+            requests: result
+        });
     }
 
     entry public fun get_lender_pov_requests(
         handler: &LendRequestHandler,
         ctx: &mut TxContext
-    ): vector<LendRequestView> {
+    ) {
         let lender_address = tx_context::sender(ctx);
-        if (!vec_map::contains(&handler.lender_pov_requests, &lender_address)) {
-            return vector::empty()
-        };
-        let request_ids = vec_map::get(&handler.lender_pov_requests, &lender_address);
         let mut result = vector::empty<LendRequestView>();
-        let mut i = 0;
-        let len = vector::length(request_ids);
         
-        while (i < len) {
-            let current_request_id = *vector::borrow(request_ids, i); 
-            let request_id = *vector::borrow(request_ids, i);
-            let request = vec_map::get(&handler.lend_requests,&current_request_id); 
-            let view = LendRequestView {
-                request_id: request_id, 
-                organisation_id: request.organisation_id,
-                lender: request.lender,
-                borrower: request.borrower,
-                requested_amount: request.requested_amount,
-                time_of_issue: request.time_of_issue,
-                time_of_return: request.time_of_return,
-                elgibility_score: request.elgibility_score,
-                status: request.status,
-                proofData: request.proofData,
-                recommendation: request.recommendation,
+        if (vec_map::contains(&handler.lender_pov_requests, &lender_address)) {
+            let request_ids = vec_map::get(&handler.lender_pov_requests, &lender_address);
+            let mut i = 0;
+            let len = vector::length(request_ids);
+            
+            while (i < len) {
+                let current_request_id = *vector::borrow(request_ids, i); 
+                let request_id = *vector::borrow(request_ids, i);
+                let request = vec_map::get(&handler.lend_requests, &current_request_id); 
+                let view = LendRequestView {
+                    request_id: request_id, 
+                    organisation_id: request.organisation_id,
+                    lender: request.lender,
+                    borrower: request.borrower,
+                    requested_amount: request.requested_amount,
+                    time_of_issue: request.time_of_issue,
+                    time_of_return: request.time_of_return,
+                    elgibility_score: request.elgibility_score,
+                    status: request.status,
+                    proofData: request.proofData,
+                    recommendation: request.recommendation,
+                };
+                vector::push_back(&mut result, view);
+                i = i + 1;
             };
-            vector::push_back(&mut result, view);
-            i = i + 1;
         };
-        result
-    }
+        
+        sui::event::emit(LenderRequestsEvent {
+            lender: lender_address,
+            requests: result
+        });
+   }
     entry public fun get_lend_request_details(
         handler: &LendRequestHandler,
-        request_id: ID
-    ): (ID, ID, address, address, u64, u64, u64, u64, u64, String, u64) {
+        request_id: ID,
+        ctx: &mut TxContext
+    ) {
         assert!(vec_map::contains(&handler.lend_requests, &request_id), 0);
         let id = request_id;
         let request = vec_map::get(&handler.lend_requests, &request_id);
         
-        (
-            id,
-            request.organisation_id,
-            request.lender,
-            request.borrower,
-            request.requested_amount,
-            request.time_of_issue,
-            request.time_of_return,
-            request.elgibility_score,
-            request.status,
-            request.proofData,
-            request.recommendation
-        )  
+        sui::event::emit(LendRequestDetailsEvent {
+            request_id: id,
+            organisation_id: request.organisation_id,
+            lender: request.lender,
+            borrower: request.borrower,
+            requested_amount: request.requested_amount,
+            time_of_issue: request.time_of_issue,
+            time_of_return: request.time_of_return,
+            elgibility_score: request.elgibility_score,
+            status: request.status,
+            proofData: request.proofData,
+            recommendation: request.recommendation
+        });
+
     }
 
-    entry public fun get_lend_request_count(handler: &LendRequestHandler): u64 {
-        vec_map::size(&handler.lend_requests)
+    entry public fun get_lend_request_count(
+        handler: &LendRequestHandler,
+        ctx: &mut TxContext
+    ) {
+        let count = vec_map::size(&handler.lend_requests);
+        sui::event::emit(LendRequestCountEvent {
+            count
+        });
     }
-
     
 
     // CLAIMS 
@@ -625,6 +653,60 @@ module 0x0::carbon_marketplace {
         voting_period: u64
     }
 
+    public struct ClaimCreated has copy, drop {
+        claim_id: ID,
+        organisation: address,
+        longitude: u64,
+        latitude: u64,
+        amount: u64,
+        ipfs_hash: String,
+        voting_period: u64
+    }
+
+    public struct ClaimVoted has copy, drop {
+        claim_id: ID,
+        voter: address,
+        vote: u64,  // 1 for yes, 0 for no
+        current_yes: u64,
+        current_no: u64
+    }
+
+    public struct ClaimDetailsEvent has copy, drop {
+        claim_id: ID,
+        organisation_wallet_address: address,
+        longitude: u64,
+        latitude: u64,
+        requested_carbon_credits: u64,
+        status: u64,
+        ipfs_hash: String,
+        description: String,
+        time_of_issue: u64,
+        yes_votes: u64,
+        no_votes: u64,
+        total_votes: u64,
+        voting_period: u64
+    }
+
+    public struct OrganisationClaimsEvent has copy, drop {
+        organisation: address,
+        claims: vector<ClaimView>
+    }
+
+    public struct AllClaimsEvent has copy, drop {
+        claims: vector<ClaimView>
+    }
+
+    public struct ClaimCountEvent has copy, drop {
+        count: u64
+    }
+
+    public struct ClaimResolved has copy, drop {
+        claim_id: ID,
+        status: u64,  // 1 for approved, 2 for rejected
+        total_yes: u64,
+        total_no: u64
+    }
+
     entry public fun create_claim(
         handler: &mut ClaimHandler,
         clock: &Clock,
@@ -644,64 +726,191 @@ module 0x0::carbon_marketplace {
             latitude,
             requested_carbon_credits,
             status,
-            ipfs_hash,
-            description,
+            ipfs_hash: copy ipfs_hash,
+            description: copy description,
             time_of_issue: get_current_timestamp(clock),
             yes_votes: 0,
             no_votes: 0,
-            total_votes: 0,  
+            total_votes: 0,
             voting_period
         };
+        
         let claim_id = object::id(&new_claim);
         vec_map::insert(&mut handler.claims, claim_id, new_claim);
+        
+        // Initialize organisation claims vector if it doesn't exist
+        if (!vec_map::contains(&mut handler.organisation_claims, &tx_context::sender(ctx))) {
+            vec_map::insert(&mut handler.organisation_claims, tx_context::sender(ctx), vector::empty());
+        };
+        
         let claims = vec_map::get_mut(&mut handler.organisation_claims, &tx_context::sender(ctx));
         vector::push_back(claims, claim_id);
+        
+        sui::event::emit(ClaimCreated {
+            claim_id,
+            organisation: tx_context::sender(ctx),
+            longitude,
+            latitude,
+            amount: requested_carbon_credits,
+            ipfs_hash,
+            voting_period
+        });
     }
 
     entry public fun get_claim_details(
         handler: &ClaimHandler,
-        claim_id: ID
-    ): (ID, address, u64, u64, u64, u64, String, String, u64, u64, u64, u64) {
+        claim_id: ID,
+        ctx: &mut TxContext
+    ) {
+        let id = claim_id;
         assert!(vec_map::contains(&handler.claims, &claim_id), 0);
-        let claim_id_duplicate = claim_id;
         let claim = vec_map::get(&handler.claims, &claim_id);
-        (
-            claim_id_duplicate,
-            claim.organisation_wallet_address,
-            claim.longitude,
-            claim.latitude,
-            claim.requested_carbon_credits,
-            claim.status,
-            claim.ipfs_hash,
-            claim.description,
-            claim.time_of_issue,
-            claim.yes_votes,
-            claim.no_votes,
-            claim.total_votes
-        )
+        
+        sui::event::emit(ClaimDetailsEvent {
+            claim_id: id,
+            organisation_wallet_address: claim.organisation_wallet_address,
+            longitude: claim.longitude,
+            latitude: claim.latitude,
+            requested_carbon_credits: claim.requested_carbon_credits,
+            status: claim.status,
+            ipfs_hash: claim.ipfs_hash,
+            description: claim.description,
+            time_of_issue: claim.time_of_issue,
+            yes_votes: claim.yes_votes,
+            no_votes: claim.no_votes,
+            total_votes: claim.total_votes,
+            voting_period: claim.voting_period
+        });
     }
 
-    entry public fun get_claim_count(handler: &ClaimHandler): u64 {
-        vec_map::size(&handler.claims)
+    entry public fun get_claim_count(
+        handler: &ClaimHandler,
+        ctx: &mut TxContext
+    ) {
+        let count = vec_map::size(&handler.claims);
+        sui::event::emit(ClaimCountEvent {
+            count
+        });
     }
+
     entry public fun get_claims_by_organisation(
         handler: &ClaimHandler,
         ctx: &mut TxContext
-    ): vector<ClaimView> {
+    ) {
         let organisation_address = tx_context::sender(ctx);
-        if (!vec_map::contains(&handler.organisation_claims, &organisation_address)) {
-            return vector::empty()
+        let mut result = vector::empty<ClaimView>();
+        
+        if (vec_map::contains(&handler.organisation_claims, &organisation_address)) {
+            let claim_ids = vec_map::get(&handler.organisation_claims, &organisation_address);
+            let mut i = 0;
+            let len = vector::length(claim_ids);
+            
+            while (i < len) {
+                let claim_id = *vector::borrow(claim_ids, i);
+                let claim_id2 = *vector::borrow(claim_ids, i);
+                let claim = vec_map::get(&handler.claims, &claim_id);
+                let view = ClaimView {
+                    claim_id: claim_id2,
+                    organisation_wallet_address: claim.organisation_wallet_address,
+                    longitude: claim.longitude,
+                    latitude: claim.latitude,
+                    requested_carbon_credits: claim.requested_carbon_credits,
+                    status: claim.status,
+                    ipfs_hash: claim.ipfs_hash,
+                    description: claim.description,
+                    time_of_issue: claim.time_of_issue,
+                    yes_votes: claim.yes_votes,
+                    no_votes: claim.no_votes,
+                    total_votes: claim.total_votes,
+                    voting_period: claim.voting_period
+                };
+                vector::push_back(&mut result, view);
+                i = i + 1;
+            };
         };
-        let claim_ids = vec_map::get(&handler.organisation_claims, &organisation_address);
+        
+        sui::event::emit(OrganisationClaimsEvent {
+            organisation: organisation_address,
+            claims: result
+        });
+    }
+    
+    entry public fun get_all_claims(
+        organisation_handler: &mut OrganisationHandler,
+        handler: &mut ClaimHandler, 
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        let claim_ids = vec_map::keys(&handler.claims);
         let mut result = vector::empty<ClaimView>();
         let mut i = 0;
-        let len = vector::length(claim_ids);
+        let len = vector::length(&claim_ids);
+        
         while (i < len) {
-            let claim_id = *vector::borrow(claim_ids, i);
-            let claim_id2 = *vector::borrow(claim_ids, i);
-            let claim = vec_map::get(&handler.claims, &claim_id);
+            let claim_id = *vector::borrow(&claim_ids, i);
+            let claim = vec_map::get_mut(&mut handler.claims, &claim_id);
+            let voting_end_time = claim.time_of_issue + claim.voting_period;
+            let current_time = get_current_timestamp(clock);
+            
+            if (claim.status == 0 && voting_end_time < current_time) {
+                if (claim.yes_votes > claim.no_votes) {
+                    let org_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &claim.organisation_wallet_address);
+                    let org = vec_map::get_mut(&mut organisation_handler.organisations, org_id);
+                    org.carbon_credits = org.carbon_credits + claim.requested_carbon_credits;
+                    claim.status = 1;
+                    
+                    // Update reputation for yes voters
+                    if (vec_map::contains(&handler.claim_to_voters_yes, &claim_id)) {
+                        let voters = vec_map::get(&handler.claim_to_voters_yes, &claim_id);
+                        let mut j = 0;
+                        let voters_len = vector::length(voters);
+                        while (j < voters_len) {
+                            let voter = *vector::borrow(voters, j);
+                            if (vec_map::contains(&organisation_handler.wallet_addressToOrg, &voter)) {
+                                let voter_org_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &voter);
+                                let voter_org = vec_map::get_mut(&mut organisation_handler.organisations, voter_org_id);
+                                voter_org.reputation_score = voter_org.reputation_score + 1;
+                            };
+                            j = j + 1;
+                        };
+                    };
+                    
+                    sui::event::emit(ClaimResolved {
+                        claim_id,
+                        status: 1,
+                        total_yes: claim.yes_votes,
+                        total_no: claim.no_votes
+                    });
+                } else {
+                    claim.status = 2;
+                    
+                    // Update reputation for no voters
+                    if (vec_map::contains(&handler.claim_to_voters_no, &claim_id)) {
+                        let voters = vec_map::get(&handler.claim_to_voters_no, &claim_id);
+                        let mut j = 0;
+                        let voters_len = vector::length(voters);
+                        while (j < voters_len) {
+                            let voter = *vector::borrow(voters, j);
+                            if (vec_map::contains(&organisation_handler.wallet_addressToOrg, &voter)) {
+                                let voter_org_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &voter);
+                                let voter_org = vec_map::get_mut(&mut organisation_handler.organisations, voter_org_id);
+                                voter_org.reputation_score = voter_org.reputation_score + 1;
+                            };
+                            j = j + 1;
+                        };
+                    };
+                    
+                    sui::event::emit(ClaimResolved {
+                        claim_id,
+                        status: 2,
+                        total_yes: claim.yes_votes,
+                        total_no: claim.no_votes
+                    });
+                };
+            };
+            
             let view = ClaimView {
-                claim_id: claim_id2,
+                claim_id,
                 organisation_wallet_address: claim.organisation_wallet_address,
                 longitude: claim.longitude,
                 latitude: claim.latitude,
@@ -712,105 +921,69 @@ module 0x0::carbon_marketplace {
                 time_of_issue: claim.time_of_issue,
                 yes_votes: claim.yes_votes,
                 no_votes: claim.no_votes,
-                total_votes: claim.total_votes,  
+                total_votes: claim.total_votes,
                 voting_period: claim.voting_period
             };
             vector::push_back(&mut result, view);
             i = i + 1;
         };
-        result
-    }
-    
-    entry public fun get_all_claims(
-        organisation_handler: &mut OrganisationHandler,
-        handler: &mut ClaimHandler, 
-        clock: &Clock,
-    ): vector<ClaimView> {
-        let claim_ids: vector<ID> = vec_map::keys(&handler.claims);
-        let mut result = vector::empty<ClaimView>();
-        let mut i = 0;
-        let len = vector::length(&claim_ids);
-        while (i < len) {  
-            let claim_id = *vector::borrow(&claim_ids, i);
-            let claim_id2 = *vector::borrow(&claim_ids, i);
-            let claim = vec_map::get_mut(&mut handler.claims, &claim_id); 
-            let voting_end_time : u64 = claim.time_of_issue + claim.voting_period;
-            let current_time : u64 = get_current_timestamp(clock);
-            let mut final_yes_votes: u64 = claim.yes_votes;
-            let mut final_no_votes: u64 = claim.no_votes;
-
-            if(claim.status == 0 && voting_end_time < current_time) {
-                if(claim.yes_votes > claim.no_votes) {
-                    let org_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &claim.organisation_wallet_address);
-                    let org = vec_map::get_mut(&mut organisation_handler.organisations, org_id);
-                    org.carbon_credits = org.carbon_credits + claim.requested_carbon_credits;
-                    claim.status = 1; 
-                    let claim_to_voters_yes: &mut vector<address> = vec_map::get_mut(&mut handler.claim_to_voters_yes, &claim_id);
-                    let len1 = vector::length(claim_to_voters_yes);
-                    while(i < len1){
-                        let voter = *vector::borrow(claim_to_voters_yes, i);
-                        let organisation_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &voter);
-                        let organisation = vec_map::get_mut(&mut organisation_handler.organisations, organisation_id);
-                        organisation.reputation_score = organisation.reputation_score + 1;
-                        i = i + 1;
-                    }
-                } else {
-                    claim.status = 2;
-                    let claim_to_voters_no: &mut vector<address> = vec_map::get_mut(&mut handler.claim_to_voters_no, &claim_id);
-                    let len2 = vector::length(claim_to_voters_no);
-                    while(i < len2){
-                        let voter = *vector::borrow(claim_to_voters_no, i);
-                        let organisation_id = vec_map::get(&organisation_handler.wallet_addressToOrg, &voter);
-                        let organisation = vec_map::get_mut(&mut organisation_handler.organisations, organisation_id);
-                        organisation.reputation_score = organisation.reputation_score + 1;
-                        i = i + 1;
-                    }
-                }
-            } else {
-                final_yes_votes = 0;
-                final_no_votes = 0;
-            };
-
-            let view = ClaimView {
-                claim_id: claim_id2,
-                organisation_wallet_address: claim.organisation_wallet_address,
-                longitude: claim.longitude,
-                latitude: claim.latitude,
-                requested_carbon_credits: claim.requested_carbon_credits,
-                status: claim.status,
-                ipfs_hash: claim.ipfs_hash,
-                description: claim.description,
-                time_of_issue: claim.time_of_issue,
-                yes_votes: final_yes_votes,
-                no_votes: final_no_votes,
-                total_votes: claim.total_votes,  
-                voting_period: claim.voting_period
-            };
-            vector::push_back(&mut result, view);
-            i = i + 1;
-        };
-        result
+        
+        sui::event::emit(AllClaimsEvent {
+            claims: result
+        });
     }
 
     entry public fun vote_on_a_claim(
         handler: &mut ClaimHandler,
+        clock: &Clock,
         claim_id: ID,
         vote: u64,
         ctx: &mut TxContext,
     ) {
         assert!(vec_map::contains(&handler.claims, &claim_id), 0);
         let claim = vec_map::get_mut(&mut handler.claims, &claim_id);
+        
+        // Ensure voting period hasn't ended
+        let current_time = get_current_timestamp(clock);
+        assert!(current_time <= claim.time_of_issue + claim.voting_period, 1);
+        
+        // Ensure voter hasn't voted before
+        if (vec_map::contains(&handler.claim_voters, &tx_context::sender(ctx))) {
+            let voter_claims = vec_map::get(&handler.claim_voters, &tx_context::sender(ctx));
+            assert!(!vector::contains(voter_claims, &claim_id), 2);
+        };
+        
         if (vote == 1) {
             claim.yes_votes = claim.yes_votes + 1;
+            // Initialize yes voters vector if it doesn't exist
+            if (!vec_map::contains(&mut handler.claim_to_voters_yes, &claim_id)) {
+                vec_map::insert(&mut handler.claim_to_voters_yes, claim_id, vector::empty());
+            };
             let voters = vec_map::get_mut(&mut handler.claim_to_voters_yes, &claim_id);
             vector::push_back(voters, tx_context::sender(ctx));
         } else {
             claim.no_votes = claim.no_votes + 1;
+            // Initialize no voters vector if it doesn't exist
+            if (!vec_map::contains(&mut handler.claim_to_voters_no, &claim_id)) {
+                vec_map::insert(&mut handler.claim_to_voters_no, claim_id, vector::empty());
+            };
             let voters = vec_map::get_mut(&mut handler.claim_to_voters_no, &claim_id);
             vector::push_back(voters, tx_context::sender(ctx));
         };
-        let voters = vec_map::get_mut(&mut handler.claim_voters, &tx_context::sender(ctx));
-        vector::push_back(voters, claim_id);
+        
+        claim.total_votes = claim.total_votes + 1;
+        if (!vec_map::contains(&mut handler.claim_voters, &tx_context::sender(ctx))) {
+            vec_map::insert(&mut handler.claim_voters, tx_context::sender(ctx), vector::empty());
+        };
+        let voter_claims = vec_map::get_mut(&mut handler.claim_voters, &tx_context::sender(ctx));
+        vector::push_back(voter_claims, claim_id);
+        
+        sui::event::emit(ClaimVoted {
+            claim_id,
+            voter: tx_context::sender(ctx),
+            vote,
+            current_yes: claim.yes_votes,
+            current_no: claim.no_votes
+        });
     }
-
 }
