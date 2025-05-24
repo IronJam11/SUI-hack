@@ -6,7 +6,7 @@
 
 ### **Executive Summary**
 
-Our platform provides a comprehensive solution to the growing need for transparent, secure, and efficient carbon credit trading. By leveraging blockchain technology, the Sui Move programming language, and AI-powered agents, we’ve created a fully decentralized marketplace for carbon credit generation, validation, trading, and offsetting.
+Our platform provides a comprehensive solution to the growing need for transparent, secure, and efficient carbon credit trading. By leveraging blockchain technology, the Sui Move programming language, we’ve created a fully decentralized marketplace for carbon credit generation, validation, trading, and offsetting.
 
 ---
 
