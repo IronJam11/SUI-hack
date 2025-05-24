@@ -1,8 +1,9 @@
 # **Decentralized Carbon Credit Marketplace**
 
-## **IAgent Integration for Climate Action**
+<img width="1147" alt="image" src="https://github.com/user-attachments/assets/b9bb5740-27d2-4f6f-812a-c1b9e7ebbd6a" />
 
----
+DEMO VIDEO: https://vimeo.com/1087311095?share=copy
+PITCH DECK: https://drive.google.com/file/d/11jXVbPLX3nHghIAq__xPmcobVJ8kjtM8/view?usp=sharing  
 
 ### **Executive Summary**
 
@@ -43,8 +44,6 @@ By 2030, we aim to facilitate the transfer of **\$50B+** in climate finance thro
 ### **Core System Architecture**
 
 * **Green Organizations**: Submit carbon reduction claims with geospatial validation
-* **Smart Contract Infrastructure**: Modular Sui Move contracts for managing claims, lending, and verification
-* **IAgent System**: AI-powered agents for seamless marketplace interaction and support
 
 ---
 
@@ -75,17 +74,6 @@ Our platform introduces advanced decentralized financial mechanisms to enhance l
 * **Reputation-Based Credit Scoring**: Evaluates eligibility using agent-verified credentials
 * **Automated Repayment**: Terms enforced through Sui smart contracts
 * **Cross-Chain Liquidity**: Planned integrations with broader DeFi ecosystems
-
----
-
-### **IAgent System: AI-Powered Experience**
-
-Our marketplace utilizes intelligent agents for automation, guidance, and compliance:
-
-* **Carbon Reporting Agent**: Assists with claim preparation and evidence gathering
-* **Investment Advisor Agent**: Analyzes market conditions and provides strategic insights
-* **Compliance Agent**: Monitors regulatory frameworks and ensures alignment
-* **Inter-Agent Communication**: Enables coordinated workflows across different system agents
 
 ---
 
