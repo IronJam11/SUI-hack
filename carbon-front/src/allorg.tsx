@@ -1,8 +1,7 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { 
   useCurrentAccount, 
-  
   useSuiClientQuery,
-  useSuiClient
 } from "@mysten/dapp-kit";
 
 import { 
@@ -38,15 +37,14 @@ type Organization = {
 export function OrganizationDirectory() {
   const account = useCurrentAccount();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(false);
+  const loading = false;
   const [error, setError] = useState("");
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [showDebug, setShowDebug] = useState(false);
-  const suiClient = useSuiClient();
+  const showDebug = false;
 
   // Query the handler object to get organization data
-  const { data: handlerObject, refetch } = useSuiClientQuery("getObject", {
+  const { data: handlerObject } = useSuiClientQuery("getObject", {
     id: ORGANIZATION_HANDLER_ID,
     options: { 
       showContent: true,
@@ -119,11 +117,6 @@ export function OrganizationDirectory() {
     }
   }, [account, handlerObject]);
 
-  // Manual refresh function
-  const handleRefresh = async () => {
-    setError("");
-    await refetch();
-  };
 
   // Helper functions
   const getReputationBadge = (score: number) => {

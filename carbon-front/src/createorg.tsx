@@ -5,17 +5,6 @@ import {
   useSuiClient
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
-import { 
-  Container, 
-  Flex, 
-  Heading, 
-  Text, 
-  Button, 
-  TextField, 
-  TextArea,
-  Card,
-  Table
-} from "@radix-ui/themes";
 import { useState, useEffect, useCallback } from "react";
 
 // Replace with your actual package ID and handler object ID
@@ -237,7 +226,6 @@ export function OrganisationProfile() {
         
         // Even without the event, try to refetch
         setTimeout(async () => {
-          const refetchedData = await refetchHandler();
           setIsRegistered(true);
         }, 3000);
       }
@@ -304,16 +292,6 @@ export function OrganisationProfile() {
       handleError(error, "Fetching details");
     }
   }, [account, signAndExecute, suiClient, handleError]);
-
-  // Debug information
-  const debugInfo = () => {
-    console.log("Debug Info:");
-    console.log("Account:", account);
-    console.log("Handler Object:", handlerObject);
-    console.log("Is Registered:", isRegistered);
-    console.log("Package ID:", PACKAGE_ID);
-    console.log("Handler ID:", ORGANIZATION_HANDLER_ID);
-  };
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>

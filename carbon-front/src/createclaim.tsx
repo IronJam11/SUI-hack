@@ -4,18 +4,6 @@ import {
     useSuiClient
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
-import {
-    Container,
-    Flex,
-    Heading,
-    Text,
-    Button,
-    TextField,
-    TextArea,
-    Card,
-    Grid,
-    Select
-} from "@radix-ui/themes";
 import { useState } from "react";
 
 // Replace with your actual package ID and handler object ID

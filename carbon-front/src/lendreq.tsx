@@ -1,7 +1,6 @@
 import { 
     useCurrentAccount, 
     useSignAndExecuteTransaction, 
-    useSuiClientQuery,
     useSuiClient
   } from "@mysten/dapp-kit";
   import { Transaction } from "@mysten/sui/transactions";
@@ -10,15 +9,7 @@ import {
     Flex, 
     Heading, 
     Text, 
-    Button, 
-    Card,
-    Table,
     Badge,
-    Box,
-    Dialog,
-    TextField,
-    Select,
-    Avatar
   } from "@radix-ui/themes";
   import { useState, useEffect } from "react";
   
