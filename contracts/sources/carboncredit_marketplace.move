@@ -107,38 +107,38 @@ module 0x0::carbon_marketplace {
         );
     }
 
-    entry public fun register_organisation(
-        handler: &mut OrganisationHandler,
-        name: String, 
-        description: String,
-        ctx: &mut TxContext
-    ) {
-        let new_org = Organisation {
-            id: object::new(ctx),
-            wallet_address: tx_context::sender(ctx),
-            name,
-            description,
-            owner: tx_context::sender(ctx),
-            carbon_credits: 0,
-            times_lent: 0,
-            total_lent: 0,
-            times_borrowed: 0,
-            total_borrowed: 0,
-            total_returned: 0,
-            times_returned: 0,
-            emissions: 0,
-            reputation_score: 0,
-        };
-        
-        let org_id = object::id(&new_org);
-        vec_map::insert(&mut handler.organisations, org_id, new_org);
-        vec_map::insert(&mut handler.wallet_addressToOrg, tx_context::sender(ctx), org_id);
-        sui::event::emit(OrganisationCreated {
-            organisation_id: org_id,
-            name,
-            owner: tx_context::sender(ctx)
-        });
-    }
+        entry public fun register_organisation(
+            handler: &mut OrganisationHandler,
+            name: String, 
+            description: String,
+            ctx: &mut TxContext
+        ) {
+            let new_org = Organisation {
+                id: object::new(ctx),
+                wallet_address: tx_context::sender(ctx),
+                name,
+                description,
+                owner: tx_context::sender(ctx),
+                carbon_credits: 0,
+                times_lent: 0,
+                total_lent: 0,
+                times_borrowed: 0,
+                total_borrowed: 0,
+                total_returned: 0,
+                times_returned: 0,
+                emissions: 0,
+                reputation_score: 0,
+            };
+            
+            let org_id = object::id(&new_org);
+            vec_map::insert(&mut handler.organisations, org_id, new_org);
+            vec_map::insert(&mut handler.wallet_addressToOrg, tx_context::sender(ctx), org_id);
+            sui::event::emit(OrganisationCreated {
+                organisation_id: org_id,
+                name,
+                owner: tx_context::sender(ctx)
+            });
+        }
 
     entry public fun change_organisation_details(
         handler: &mut OrganisationHandler,

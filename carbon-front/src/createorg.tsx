@@ -17,7 +17,6 @@ import {
   Table
 } from "@radix-ui/themes";
 import { useState, useEffect, useCallback } from "react";
-import ClipLoader from "react-spinners/ClipLoader";
 
 // Replace with your actual package ID and handler object ID
 const ORGANIZATION_HANDLER_ID = "0x3e93f9c3174505789f34825c4833e59adeb9b3f68adb8bfd53ecdcf0b61b75db";
@@ -43,12 +42,60 @@ export function OrganisationProfile() {
   }, []);
 
   // Check if organization exists for current wallet
-  const { data: handlerObject } = useSuiClientQuery("getObject", {
+  const { data: handlerObject, refetch: refetchHandler } = useSuiClientQuery("getObject", {
     id: ORGANIZATION_HANDLER_ID,
     options: { showContent: true }
   });
 
-  // Check registration status on load
+  // Extract organization details from the handler object
+  const extractOrgDetailsFromHandler = useCallback((handlerData: any, walletAddress: string) => {
+    try {
+      if (handlerData?.data?.content?.dataType === "moveObject") {
+        const handlerFields = handlerData.data.content.fields as any;
+        const orgMap = handlerFields.wallet_addressToOrg?.fields?.contents || [];
+        const orgCollection = handlerFields.organisations?.fields?.contents || [];
+        
+        // Find the org ID for this wallet
+        const walletOrgEntry = orgMap.find((item: any) => 
+          item.fields.key === walletAddress
+        );
+        
+        if (walletOrgEntry) {
+          const orgId = walletOrgEntry.fields.value;
+          
+          // Find the organization details
+          const orgEntry = orgCollection.find((item: any) => 
+            item.fields.key === orgId
+          );
+          
+          if (orgEntry) {
+            const org = orgEntry.fields.value.fields;
+            return {
+              organisation_id: orgId,
+              name: org.name,
+              description: org.description,
+              owner: org.owner,
+              carbon_credits: org.carbon_credits,
+              times_lent: org.times_lent,
+              total_lent: org.total_lent,
+              times_borrowed: org.times_borrowed,
+              total_borrowed: org.total_borrowed,
+              total_returned: org.total_returned,
+              times_returned: org.times_returned,
+              emissions: org.emissions,
+              reputation_score: org.reputation_score
+            };
+          }
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("Error extracting org details:", error);
+      return null;
+    }
+  }, []);
+
+  // Check registration status and fetch details on load
   useEffect(() => {
     try {
       if (account && handlerObject?.data?.content?.dataType === "moveObject") {
@@ -57,12 +104,21 @@ export function OrganisationProfile() {
         const isRegistered = orgMap.some((item: any) => 
           item.fields.key === account.address
         );
+        
         setIsRegistered(isRegistered);
+        
+        if (isRegistered) {
+          // Extract organization details directly from the handler object
+          const details = extractOrgDetailsFromHandler(handlerObject, account.address);
+          if (details) {
+            setOrgDetails(details);
+          }
+        }
       }
     } catch (error) {
       handleError(error, "Checking registration status");
     }
-  }, [account, handlerObject, handleError]);
+  }, [account, handlerObject, handleError, extractOrgDetailsFromHandler]);
 
   // Register new organization
   const registerOrganization = useCallback(async () => {
@@ -143,35 +199,61 @@ export function OrganisationProfile() {
       
       if (orgEvent) {
         console.log("Organization created event found:", orgEvent);
-        setIsRegistered(true);
         setSuccess("Organization registered successfully!");
         setName("");
         setDescription("");
         
-        // Try to fetch details, but don't fail if it doesn't work
-        setTimeout(() => {
-          fetchOrganizationDetails().catch(err => 
-            console.warn("Couldn't fetch details immediately:", err)
-          );
-        }, 2000);
+        // Refetch the handler object to get updated data
+        setTimeout(async () => {
+          try {
+            const refetchedData = await refetchHandler();
+            if (refetchedData.data) {
+              setIsRegistered(true);
+              // Extract details from the refetched data
+              const details = extractOrgDetailsFromHandler(refetchedData, account.address);
+              if (details) {
+                setOrgDetails(details);
+                console.log("Organization details automatically loaded:", details);
+              } else {
+                console.log("Details not found in refetched data, will try again");
+                // Try one more time after a short delay
+                setTimeout(async () => {
+                  const secondRefetch = await refetchHandler();
+                  const secondDetails = extractOrgDetailsFromHandler(secondRefetch, account.address);
+                  if (secondDetails) {
+                    setOrgDetails(secondDetails);
+                  }
+                }, 2000);
+              }
+            }
+          } catch (error) {
+            console.error("Error refetching organization data:", error);
+          }
+        }, 3000);
       } else {
         console.log("No organization created event found");
         console.log("All events:", events);
-        setSuccess("Transaction completed - please refresh to see your organization");
+        setSuccess("Transaction completed - refreshing data...");
+        
+        // Even without the event, try to refetch
+        setTimeout(async () => {
+          const refetchedData = await refetchHandler();
+          setIsRegistered(true);
+        }, 3000);
       }
     } catch (error) {
       handleError(error, "Registration");
     } finally {
       setLoading(false);
     }
-  }, [account, name, description, signAndExecute, suiClient, handleError]);
+  }, [account, name, description, signAndExecute, suiClient, handleError, refetchHandler, extractOrgDetailsFromHandler]);
 
-  // Fetch organization details
+  // Manual fetch organization details (fallback)
   const fetchOrganizationDetails = useCallback(async () => {
     if (!account) return;
 
     try {
-      console.log("Fetching organization details...");
+      console.log("Manually fetching organization details...");
       setError("");
 
       const tx = new Transaction();
@@ -234,135 +316,373 @@ export function OrganisationProfile() {
   };
 
   return (
-    <Container my="4">
-      <Heading mb="4">Organization Profile</Heading>
-
-      {/* Debug button */}
-      <Button onClick={debugInfo} variant="ghost" size="1" mb="2">
-        Debug Info (Check Console)
-      </Button>
-
-      {error && (
-        <Card mb="3" style={{ backgroundColor: "#fee", border: "1px solid #fcc" }}>
-          <Text color="red">Error: {error}</Text>
-          <Button 
-            size="1" 
-            variant="ghost" 
-            onClick={() => setError("")}
-            style={{ marginTop: "8px" }}
-          >
-            Dismiss
-          </Button>
-        </Card>
-      )}
-
-      {success && (
-        <Card mb="3" style={{ backgroundColor: "#efe", border: "1px solid #cfc" }}>
-          <Text color="green">✓ {success}</Text>
-          <Button 
-            size="1" 
-            variant="ghost" 
-            onClick={() => setSuccess("")}
-            style={{ marginTop: "8px" }}
-          >
-            Dismiss
-          </Button>
-        </Card>
-      )}
-
-      {!account ? (
-        <Text>Please connect your wallet to view or register your organization</Text>
-      ) : isRegistered ? (
-        <Card>
-          <Heading size="4">Your Organization</Heading>
-          
-          {orgDetails ? (
-            <Table.Root>
-              <Table.Body>
-                <Table.Row>
-                  <Table.Cell>Name</Table.Cell>
-                  <Table.Cell>{orgDetails.name}</Table.Cell>
-                </Table.Row>
-                <Table.Row>
-                  <Table.Cell>Description</Table.Cell>
-                  <Table.Cell>{orgDetails.description}</Table.Cell>
-                </Table.Row>
-                <Table.Row>
-                  <Table.Cell>Carbon Credits</Table.Cell>
-                  <Table.Cell>{orgDetails.carbon_credits}</Table.Cell>
-                </Table.Row>
-                <Table.Row>
-                  <Table.Cell>Reputation Score</Table.Cell>
-                  <Table.Cell>{orgDetails.reputation_score}</Table.Cell>
-                </Table.Row>
-              </Table.Body>
-            </Table.Root>
+    <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+      {/* 3D Background */}
+      <div style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        zIndex: 0,
+        background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #000000 100%)'
+      }} />
+      
+      {/* Gradient Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+        zIndex: 1
+      }} />
+      
+      {/* Main Content */}
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 2, 
+        minHeight: '100vh', 
+        padding: '2rem',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '3rem', paddingTop: '2rem' }}>
+          <h1 style={{
+            fontSize: 'clamp(2.5rem, 6vw, 4rem)',
+            fontWeight: 'bold',
+            background: 'linear-gradient(135deg, #10b981, #34d399, #6ee7b7)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            marginBottom: '1rem',
+            lineHeight: '1.1'
+          }}>
+            My Organization
+          </h1>
+        </div>
+  
+        {/* Debug button */}
+        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+         
+         
+        </div>
+  
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            marginBottom: '2rem',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: '#fca5a5', marginBottom: '1rem' }}>Error: {error}</div>
+            <button 
+              onClick={() => setError("")}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid rgba(239, 68, 68, 0.5)',
+                borderRadius: '0.5rem',
+                color: '#fca5a5',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+  
+        {/* Success Message */}
+        {success && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.1)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            marginBottom: '2rem',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: '#6ee7b7', marginBottom: '1rem' }}>✓ {success}</div>
+            <button 
+              onClick={() => setSuccess("")}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'rgba(16, 185, 129, 0.2)',
+                border: '1px solid rgba(16, 185, 129, 0.5)',
+                borderRadius: '0.5rem',
+                color: '#6ee7b7',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+  
+        {/* Main Content Card */}
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '2rem',
+          padding: '3rem',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+        }}>
+          {!account ? (
+            <div style={{ textAlign: 'center', padding: '3rem' }}>
+              <div style={{
+                fontSize: '1.5rem',
+                color: 'rgba(187, 247, 208, 0.8)',
+                marginBottom: '2rem'
+              }}>
+                Please connect your wallet to view or register your organization
+              </div>
+            </div>
+          ) : isRegistered ? (
+            <div>
+              <h2 style={{
+                fontSize: '2rem',
+                fontWeight: '600',
+                color: '#10b981',
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                
+              </h2>
+              
+              {orgDetails ? (
+                <div style={{
+                  display: 'grid',
+                  gap: '1rem',
+                  maxWidth: '800px',
+                  margin: '0 auto'
+                }}>
+                  {[
+                    { label: 'Name', value: orgDetails.name },
+                    { label: 'Description', value: orgDetails.description },
+                    { label: 'Carbon Credits', value: orgDetails.carbon_credits },
+                    { label: 'Reputation Score', value: orgDetails.reputation_score },
+                    { label: 'Times Lent', value: orgDetails.times_lent },
+                    { label: 'Total Lent', value: orgDetails.total_lent },
+                    { label: 'Times Borrowed', value: orgDetails.times_borrowed },
+                    { label: 'Total Borrowed', value: orgDetails.total_borrowed }
+                  ].map((item, index) => (
+                    <div key={index} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '1rem 1.5rem',
+                      background: 'rgba(16, 185, 129, 0.05)',
+                      borderRadius: '1rem',
+                      border: '1px solid rgba(16, 185, 129, 0.1)'
+                    }}>
+                      <div style={{ 
+                        color: 'rgba(187, 247, 208, 0.7)',
+                        fontWeight: '500'
+                      }}>
+                        {item.label}
+                      </div>
+                      <div style={{ 
+                        color: '#6ee7b7',
+                        fontWeight: '600'
+                      }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                    color: 'rgba(187, 247, 208, 0.8)', 
+                    marginBottom: '2rem',
+                    fontSize: '1.1rem'
+                  }}>
+                    Loading organization details...
+                  </div>
+                  <button 
+                    onClick={fetchOrganizationDetails}
+                    disabled={loading}
+                    style={{
+                      padding: '1rem 2rem',
+                      background: loading ? 'rgba(107, 114, 128, 0.3)' : 'linear-gradient(135deg, #10b981, #059669)',
+                      border: 'none',
+                      borderRadius: '9999px',
+                      color: 'white',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: loading ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!loading) {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(16, 185, 129, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!loading) {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 20px rgba(16, 185, 129, 0.3)';
+                      }
+                    }}
+                  >
+                    {loading ? "Loading..." : "Refresh Details"}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <Flex direction="column" gap="2">
-              <Text>Loading organization details...</Text>
-              <Button 
-                onClick={fetchOrganizationDetails}
-                disabled={loading}
-              >
-                {loading ? <ClipLoader size={16} /> : "Refresh Details"}
-              </Button>
-            </Flex>
+            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+              <div style={{
+                fontSize: '1.5rem',
+                color: 'rgba(187, 247, 208, 0.8)',
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                Register your organization:
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Organization name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={{
+                    padding: '1rem 1.5rem',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '1rem',
+                    color: '#6ee7b7',
+                    fontSize: '1rem',
+                    backdropFilter: 'blur(10px)',
+                    outline: 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#10b981';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                />
+                
+                <textarea 
+                  placeholder="Description" 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={4}
+                  style={{
+                    padding: '1rem 1.5rem',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '1rem',
+                    color: '#6ee7b7',
+                    fontSize: '1rem',
+                    backdropFilter: 'blur(10px)',
+                    outline: 'none',
+                    transition: 'all 0.3s ease',
+                    resize: 'vertical',
+                    minHeight: '100px'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#10b981';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                />
+                
+                <button 
+                  onClick={registerOrganization}
+                  disabled={!name.trim() || !description.trim() || loading}
+                  style={{
+                    padding: '1rem 2rem',
+                    background: (!name.trim() || !description.trim() || loading) 
+                      ? 'rgba(107, 114, 128, 0.3)' 
+                      : 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    color: 'white',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: (!name.trim() || !description.trim() || loading) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: (!name.trim() || !description.trim() || loading) 
+                      ? 'none' 
+                      : '0 4px 20px rgba(16, 185, 129, 0.3)',
+                    marginTop: '1rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (name.trim() && description.trim() && !loading) {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 8px 30px rgba(16, 185, 129, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (name.trim() && description.trim() && !loading) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(16, 185, 129, 0.3)';
+                    }
+                  }}
+                >
+                  {loading ? "Registering..." : "Register Organization"}
+                </button>
+  
+                {/* Loading state info */}
+                {loading && (
+                  <div style={{
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    borderRadius: '1rem',
+                    padding: '1rem',
+                    backdropFilter: 'blur(10px)'
+                  }}>
+                    <div style={{ 
+                      color: '#93c5fd', 
+                      fontSize: '0.9rem',
+                      textAlign: 'center'
+                    }}>
+                      Please check your wallet for transaction approval. 
+                      This process may take a few moments...
+                    </div>
+                  </div>
+                )}
+  
+                {/* Display current values for debugging */}
+                <div style={{
+                  background: 'rgba(107, 114, 128, 0.1)',
+                  border: '1px solid rgba(107, 114, 128, 0.3)',
+                  borderRadius: '1rem',
+                  padding: '1rem',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <div style={{ 
+                    color: 'rgba(156, 163, 175, 0.8)', 
+                    fontSize: '0.85rem',
+                    textAlign: 'center'
+                  }}>
+                    Debug: Name="{name}" | Description="{description}" | 
+                    Account={account?.address?.slice(0, 6)}...
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
-        </Card>
-      ) : (
-        <Flex direction="column" gap="3">
-          <Text>Register your organization:</Text>
-          
-<input
-  type="text"
-  placeholder="Organization name"
-  value={name}
-  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-  style={{
-    padding: "8px",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
-    width: "100%",
-  }}
-/>
-          
-          <TextArea 
-            placeholder="Description" 
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          
-          <Button 
-            onClick={registerOrganization}
-            disabled={!name.trim() || !description.trim() || loading}
-          >
-            {loading ? (
-              <Flex align="center" gap="2">
-                <ClipLoader size={16} color="white" />
-                <Text>Registering...</Text>
-              </Flex>
-            ) : "Register Organization"}
-          </Button>
-
-          {/* Loading state info */}
-          {loading && (
-            <Card style={{ backgroundColor: "#f0f8ff", border: "1px solid #add8e6" }}>
-              <Text size="1">
-                Please check your wallet for transaction approval. 
-                This process may take a few moments...
-              </Text>
-            </Card>
-          )}
-
-          {/* Display current values for debugging */}
-          <Card style={{ backgroundColor: "#f9f9f9" }}>
-            <Text size="1">
-              Debug: Name="{name}" | Description="{description}" | 
-              Account={account?.address?.slice(0, 6)}...
-            </Text>
-          </Card>
-        </Flex>
-      )}
-    </Container>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -274,169 +274,526 @@ import {
     }
   
     return (
-      <Container size="3" my="4">
-        <Flex justify="between" align="center" mb="4">
-          <Heading size="4">Lend Carbon Credits</Heading>
-          <Button onClick={fetchOrganizations} disabled={loading}>
-            {loading ? "Refreshing..." : "Refresh"}
-          </Button>
-        </Flex>
-  
-        {error && (
-          <Card mb="4" style={{ borderColor: "var(--red-6)" }}>
-            <Text color="red" size="2">
-              <strong>Error:</strong> {error}
-            </Text>
-          </Card>
-        )}
-  
-        {loading ? (
-          <Flex justify="center" align="center" style={{ minHeight: "200px" }}>
-            <Text>Loading organizations...</Text>
-          </Flex>
-        ) : organizations.length === 0 ? (
-          <Card>
-            <Flex justify="center" align="center" direction="column" gap="2" style={{ minHeight: "200px" }}>
-              <Text color="gray" size="3">No organizations available for lending</Text>
-              <Text color="gray" size="1">Try refreshing or check back later</Text>
-            </Flex>
-          </Card>
-        ) : (
-          <Card>
-            <Table.Root>
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Organization</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Credits</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Reputation</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Action</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-  
-              <Table.Body>
-                {organizations.map((org) => (
-                  <Table.Row key={org.organisation_id}>
-                    <Table.Cell>
-                      <Flex align="center" gap="2">
-                        <Avatar
-                          fallback={org.name.charAt(0)}
-                          radius="full"
-                          size="2"
-                        />
-                        <Box>
-                          <Text weight="bold">{org.name}</Text>
-                          <Text size="1" color="gray">
-                            {org.owner.slice(0, 6)}...{org.owner.slice(-4)}
-                          </Text>
-                        </Box>
-                      </Flex>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text weight="bold">{org.carbon_credits.toLocaleString()}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex align="center" gap="2">
-                        {getReputationBadge(org.reputation_score)}
-                        <Text size="1">({org.reputation_score})</Text>
-                      </Flex>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Button 
-                        size="1" 
-                        onClick={() => setSelectedOrg(org)}
-                        disabled={org.owner === account.address || loading}
-                        variant={org.owner === account.address ? "soft" : "solid"}
-                      >
-                        {org.owner === account.address ? "Your Organization" : "Lend Credits"}
-                      </Button>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Card>
-        )}
-  
-        {/* Lend Request Dialog */}
-        <Dialog.Root open={!!selectedOrg} onOpenChange={(open) => !open && setSelectedOrg(null)}>
-          <Dialog.Content style={{ maxWidth: 450 }}>
-            {selectedOrg && (
-              <>
-                <Dialog.Title>
-                  <Flex align="center" gap="2">
-                    <Avatar
-                      fallback={selectedOrg.name.charAt(0)}
-                      radius="full"
-                      size="2"
-                    />
-                    Lend to {selectedOrg.name}
-                  </Flex>
-                </Dialog.Title>
-                
-                <Box mb="4">
-                  <Text weight="bold">Organization Details:</Text>
-                  <Box mt="2" mb="2">
-                    <Text size="1" color="gray">Available Credits: </Text>
-                    <Text weight="bold">{selectedOrg.carbon_credits.toLocaleString()}</Text>
-                  </Box>
-                  <Box mb="2">
-                    <Text size="1" color="gray">Reputation: </Text>
-                    <Flex align="center" gap="2" display="inline-flex">
-                      {getReputationBadge(selectedOrg.reputation_score)}
-                      <Text size="1">{selectedOrg.reputation_score}/100</Text>
-                    </Flex>
-                  </Box>
-                </Box>
-  
-                <Box mb="3">
-                  <Text size="2" weight="bold" mb="1">Amount to Lend:</Text>
-                  <TextField.Root
-                    placeholder="Enter amount"
-                    value={requestAmount}
-                    onChange={(e) => setRequestAmount(e.target.value)}
-                    type="number"
-                    min="1"
-                  />
-                </Box>
-  
-                <Box mb="4">
-                  <Text size="2" weight="bold" mb="1">Lending Duration:</Text>
-                  <Select.Root 
-                    value={duration}
-                    onValueChange={setDuration}
-                  >
-                  <Select.Trigger />
-                  <Select.Content>
-                    <Select.Item value="86400">1 Day</Select.Item>
-                    <Select.Item value="259200">3 Days</Select.Item>
-                    <Select.Item value="604800">7 Days</Select.Item>
-                    <Select.Item value="1209600">14 Days</Select.Item>
-                    <Select.Item value="2592000">30 Days</Select.Item>
-                  </Select.Content>
-                  </Select.Root>
-                </Box>
-  
-                <Text size="1" color="gray" mb="3">
-                  Lending period: {formatDuration(Number(duration))}
-                </Text>
-  
-                <Flex gap="3" mt="4" justify="end">
-                  <Dialog.Close>
-                    <Button variant="soft" color="gray" disabled={isSubmitting}>
-                      Cancel
-                    </Button>
-                  </Dialog.Close>
-                  <Button 
-                    onClick={submitLendRequest}
-                    disabled={!requestAmount || isSubmitting || Number(requestAmount) <= 0}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Lend Request"}
-                  </Button>
-                </Flex>
-              </>
+      <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+        {/* 3D Background */}
+        <div style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          zIndex: 0,
+          background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #000000 100%)'
+        }} />
+        
+        {/* Gradient Overlay */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+          zIndex: 1
+        }} />
+        
+        {/* Main Content */}
+        <div style={{ 
+          position: 'relative', 
+          zIndex: 2, 
+          minHeight: '100vh', 
+          padding: '2rem'
+        }}>
+          {/* Header */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '3rem',
+            maxWidth: '1200px',
+            margin: '0 auto 3rem auto'
+          }}>
+            <h1 style={{
+              fontSize: 'clamp(2rem, 5vw, 3rem)',
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #10b981, #34d399, #6ee7b7)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              margin: 0
+            }}>
+              Lend Carbon Credits
+            </h1>
+            <button 
+              onClick={fetchOrganizations} 
+              disabled={loading}
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: loading ? 'rgba(255, 255, 255, 0.1)' : 'linear-gradient(135deg, #10b981, #059669)',
+                border: 'none',
+                borderRadius: '9999px',
+                color: loading ? 'rgba(255, 255, 255, 0.5)' : 'white',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.3s ease',
+                boxShadow: loading ? 'none' : '0 4px 20px rgba(16, 185, 129, 0.3)'
+              }}
+            >
+              {loading ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+    
+          {/* Error Message */}
+          {error && (
+            <div style={{
+              maxWidth: '1200px',
+              margin: '0 auto 2rem auto',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '1rem',
+              padding: '1rem',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <div style={{ color: '#f87171', fontWeight: '600' }}>
+                Error: {error}
+              </div>
+            </div>
+          )}
+    
+          {/* Content Area */}
+          <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            {loading ? (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '400px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '1rem',
+                border: '1px solid rgba(16, 185, 129, 0.2)'
+              }}>
+                <div style={{ color: 'rgba(187, 247, 208, 0.8)', fontSize: '1.2rem' }}>
+                  Loading organizations...
+                </div>
+              </div>
+            ) : organizations.length === 0 ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '400px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '1rem',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                backdropFilter: 'blur(10px)',
+                textAlign: 'center',
+                gap: '1rem'
+              }}>
+                <div style={{ color: 'rgba(187, 247, 208, 0.8)', fontSize: '1.5rem', fontWeight: '600' }}>
+                  No organizations available for lending
+                </div>
+                <div style={{ color: 'rgba(187, 247, 208, 0.5)', fontSize: '1rem' }}>
+                  Try refreshing or check back later
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '1rem',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                backdropFilter: 'blur(10px)',
+                overflow: 'hidden'
+              }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                        <th style={{
+                          padding: '1.5rem 1rem',
+                          textAlign: 'left',
+                          color: '#10b981',
+                          fontWeight: '600',
+                          fontSize: '1rem'
+                        }}>
+                          Organization
+                        </th>
+                        <th style={{
+                          padding: '1.5rem 1rem',
+                          textAlign: 'left',
+                          color: '#10b981',
+                          fontWeight: '600',
+                          fontSize: '1rem'
+                        }}>
+                          Credits
+                        </th>
+                        <th style={{
+                          padding: '1.5rem 1rem',
+                          textAlign: 'left',
+                          color: '#10b981',
+                          fontWeight: '600',
+                          fontSize: '1rem'
+                        }}>
+                          Reputation
+                        </th>
+                        <th style={{
+                          padding: '1.5rem 1rem',
+                          textAlign: 'center',
+                          color: '#10b981',
+                          fontWeight: '600',
+                          fontSize: '1rem'
+                        }}>
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {organizations.map((org) => (
+                        <tr 
+                          key={org.organisation_id}
+                          style={{ 
+                            borderBottom: '1px solid rgba(16, 185, 129, 0.1)',
+                            transition: 'background-color 0.2s ease' 
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <td style={{ padding: '1.5rem 1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                background: 'linear-gradient(135deg, #10b981, #34d399)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                fontSize: '1.1rem'
+                              }}>
+                                {org.name.charAt(0)}
+                              </div>
+                              <div>
+                                <div style={{ 
+                                  color: 'rgba(255, 255, 255, 0.9)', 
+                                  fontWeight: '600',
+                                  fontSize: '1rem',
+                                  marginBottom: '0.25rem'
+                                }}>
+                                  {org.name}
+                                </div>
+                                <div style={{ 
+                                  color: 'rgba(187, 247, 208, 0.6)', 
+                                  fontSize: '0.85rem',
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {org.owner.slice(0, 6)}...{org.owner.slice(-4)}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '1.5rem 1rem' }}>
+                            <div style={{ 
+                              color: 'rgba(255, 255, 255, 0.9)', 
+                              fontWeight: '700',
+                              fontSize: '1.1rem'
+                            }}>
+                              {org.carbon_credits.toLocaleString()}
+                            </div>
+                          </td>
+                          <td style={{ padding: '1.5rem 1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              {getReputationBadge(org.reputation_score)}
+                              <span style={{ 
+                                color: 'rgba(187, 247, 208, 0.7)', 
+                                fontSize: '0.9rem' 
+                              }}>
+                                ({org.reputation_score})
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+                            <button
+                              onClick={() => setSelectedOrg(org)}
+                              disabled={org.owner === account.address || loading}
+                              style={{
+                                padding: '0.5rem 1.25rem',
+                                background: org.owner === account.address 
+                                  ? 'rgba(255, 255, 255, 0.1)' 
+                                  : 'linear-gradient(135deg, #10b981, #059669)',
+                                border: org.owner === account.address 
+                                  ? '1px solid rgba(16, 185, 129, 0.3)' 
+                                  : 'none',
+                                borderRadius: '9999px',
+                                color: org.owner === account.address 
+                                  ? 'rgba(255, 255, 255, 0.6)' 
+                                  : 'white',
+                                fontSize: '0.9rem',
+                                fontWeight: '600',
+                                cursor: org.owner === account.address || loading 
+                                  ? 'not-allowed' 
+                                  : 'pointer',
+                                transition: 'all 0.3s ease',
+                                boxShadow: org.owner === account.address 
+                                  ? 'none' 
+                                  : '0 2px 10px rgba(16, 185, 129, 0.3)'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (org.owner !== account.address && !loading) {
+                                  e.currentTarget.style.transform = 'scale(1.05)';
+                                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4)';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (org.owner !== account.address && !loading) {
+                                  e.currentTarget.style.transform = 'scale(1)';
+                                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(16, 185, 129, 0.3)';
+                                }
+                              }}
+                            >
+                              {org.owner === account.address ? "Your Organization" : "Lend Credits"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )}
-          </Dialog.Content>
-        </Dialog.Root>
-      </Container>
+          </div>
+        </div>
+    
+        {/* Lend Request Dialog */}
+        {selectedOrg && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(6, 78, 59, 0.95))',
+              borderRadius: '1.5rem',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              backdropFilter: 'blur(20px)',
+              padding: '2rem',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}>
+              {/* Dialog Header */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.75rem',
+                marginBottom: '1.5rem'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #10b981, #34d399)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '1.1rem'
+                }}>
+                  {selectedOrg.name.charAt(0)}
+                </div>
+                <h2 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: '700',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  margin: 0
+                }}>
+                  Lend to {selectedOrg.name}
+                </h2>
+              </div>
+              
+              {/* Organization Details */}
+              <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ 
+                  color: '#10b981', 
+                  fontSize: '1.1rem', 
+                  fontWeight: '600',
+                  marginBottom: '1rem'
+                }}>
+                  Organization Details:
+                </h3>
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: '0.75rem',
+                  padding: '1rem',
+                  border: '1px solid rgba(16, 185, 129, 0.2)'
+                }}>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <span style={{ color: 'rgba(187, 247, 208, 0.7)', fontSize: '0.9rem' }}>
+                      Available Credits: 
+                    </span>
+                    <span style={{ 
+                      color: 'rgba(255, 255, 255, 0.9)', 
+                      fontWeight: '700',
+                      fontSize: '1rem',
+                      marginLeft: '0.5rem'
+                    }}>
+                      {selectedOrg.carbon_credits.toLocaleString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ color: 'rgba(187, 247, 208, 0.7)', fontSize: '0.9rem' }}>
+                      Reputation: 
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem' }}>
+                      {getReputationBadge(selectedOrg.reputation_score)}
+                      <span style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem' }}>
+                        {selectedOrg.reputation_score}/100
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+    
+              {/* Amount Input */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ 
+                  color: '#10b981', 
+                  fontSize: '1rem', 
+                  fontWeight: '600',
+                  display: 'block',
+                  marginBottom: '0.5rem'
+                }}>
+                  Amount to Lend:
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={requestAmount}
+                  onChange={(e) => setRequestAmount(e.target.value)}
+                  min="1"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '0.5rem',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1rem',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                />
+              </div>
+    
+              {/* Duration Selection */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ 
+                  color: '#10b981', 
+                  fontSize: '1rem', 
+                  fontWeight: '600',
+                  display: 'block',
+                  marginBottom: '0.5rem'
+                }}>
+                  Lending Duration:
+                </label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    borderRadius: '0.5rem',
+                    color: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1rem',
+                    backdropFilter: 'blur(10px)'
+                  }}
+                >
+                  <option value="86400">1 Day</option>
+                  <option value="259200">3 Days</option>
+                  <option value="604800">7 Days</option>
+                  <option value="1209600">14 Days</option>
+                  <option value="2592000">30 Days</option>
+                </select>
+              </div>
+    
+              <div style={{ 
+                color: 'rgba(187, 247, 208, 0.7)', 
+                fontSize: '0.9rem',
+                marginBottom: '2rem',
+                fontStyle: 'italic'
+              }}>
+                Lending period: {formatDuration(Number(duration))}
+              </div>
+    
+              {/* Action Buttons */}
+              <div style={{ 
+                display: 'flex', 
+                gap: '1rem', 
+                justifyContent: 'flex-end' 
+              }}>
+                <button
+                  onClick={() => setSelectedOrg(null)}
+                  disabled={isSubmitting}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '9999px',
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitLendRequest}
+                  disabled={!requestAmount || isSubmitting || Number(requestAmount) <= 0}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    background: (!requestAmount || isSubmitting || Number(requestAmount) <= 0)
+                      ? 'rgba(255, 255, 255, 0.1)'
+                      : 'linear-gradient(135deg, #10b981, #059669)',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    color: (!requestAmount || isSubmitting || Number(requestAmount) <= 0)
+                      ? 'rgba(255, 255, 255, 0.5)'
+                      : 'white',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: (!requestAmount || isSubmitting || Number(requestAmount) <= 0)
+                      ? 'not-allowed'
+                      : 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: (!requestAmount || isSubmitting || Number(requestAmount) <= 0)
+                      ? 'none'
+                      : '0 4px 20px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Lend Request"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }

@@ -145,204 +145,407 @@ export function OrganizationDirectory() {
   };
 
   return (
-    <Container size="3" my="4">
-      <Flex justify="between" align="center" mb="4">
-        <Heading size="4">Organization Directory</Heading>
-        <Flex gap="2">
-          <Button 
-            variant="outline" 
-            onClick={() => setShowDebug(!showDebug)}
-            size="1"
-          >
-            {showDebug ? "Hide Debug" : "Show Debug"}
-          </Button>
-          <Button onClick={handleRefresh} disabled={loading}>
-            {loading ? "Loading..." : "Refresh"}
-          </Button>
-        </Flex>
-      </Flex>
-
-      {/* Debug Information */}
-      {showDebug && debugInfo && (
-        <Card mb="3" style={{ backgroundColor: "", border: "1px solid #ccc" }}>
-          <Text weight="bold" mb="2">Debug Information:</Text>
-          <Text size="1" style={{ fontFamily: "monospace", whiteSpace: "pre-wrap" }}>
-            {JSON.stringify(debugInfo, null, 2)}
-          </Text>
-        </Card>
-      )}
-
-      {error && (
-        <Card mb="3" style={{ backgroundColor: "#fee", border: "1px solid #fcc" }}>
-          <Text color="red">Error: {String(error)}</Text>
-          <Button 
-            size="1" 
-            variant="ghost" 
-            onClick={() => setError("")}
-            style={{ marginTop: "8px" }}
-          >
-            Dismiss
-          </Button>
-        </Card>
-      )}
-
-      {!account ? (
-        <Text color="gray">Please connect your wallet to view organizations</Text>
-      ) : loading ? (
-        <Text color="gray">Loading organizations...</Text>
-      ) : organizations.length === 0 ? (
-        <Box>
-          <Text color="gray">No organizations found</Text>
-          <Text size="1" color="gray" mt="2">
-            Organizations are loaded directly from the handler object. 
-            Check the debug info to see the structure.
-          </Text>
-        </Box>
-      ) : (
-        <>
-          <Text size="2" color="gray" mb="3">
-            Found {organizations.length} organization{organizations.length !== 1 ? 's' : ''}
-          </Text>
-          <Card>
-            <Table.Root>
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Organization</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Credits</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Reputation</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Activity</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-
-              <Table.Body>
-                {organizations.map((org) => (
-                  <Table.Row key={org.organisation_id}>
-                    <Table.Cell>
-                      <Flex align="center" gap="2">
-                        <Avatar
-                          fallback={org.name.charAt(0)}
-                          radius="full"
-                          size="2"
-                        />
-                        <Box>
-                          <Text weight="bold">{org.name}</Text>
-                          <Text size="1" color="gray">
-                            {formatAddress(org.owner)}
-                          </Text>
-                        </Box>
-                      </Flex>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text weight="bold">{org.carbon_credits}</Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex align="center" gap="2">
+    <div style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden' }}>
+      {/* 3D Background */}
+      <div style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        zIndex: 0,
+        background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #000000 100%)'
+      }} />
+      
+      {/* Gradient Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+        zIndex: 1
+      }} />
+      
+      {/* Main Content */}
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 2, 
+        minHeight: '100vh', 
+        padding: '2rem',
+        color: 'white'
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '2rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          borderRadius: '1rem',
+          padding: '1.5rem',
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <h1 style={{
+            fontSize: 'clamp(2rem, 5vw, 3rem)',
+            fontWeight: 'bold',
+            background: 'linear-gradient(135deg, #10b981, #34d399, #6ee7b7)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            margin: 0
+          }}>
+            Organizations
+          </h1>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            {/* Add any header buttons here */}
+          </div>
+        </div>
+  
+        {/* Debug Information */}
+        {showDebug && debugInfo && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            marginBottom: '1rem',
+            border: '1px solid rgba(255, 193, 7, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '1rem', color: '#ffc107' }}>
+              Debug Information:
+            </div>
+            <pre style={{ 
+              fontFamily: 'monospace', 
+              whiteSpace: 'pre-wrap',
+              color: 'rgba(255, 255, 255, 0.8)',
+              fontSize: '0.875rem'
+            }}>
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          </div>
+        )}
+  
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            background: 'rgba(220, 53, 69, 0.1)',
+            borderRadius: '1rem',
+            padding: '1.5rem',
+            marginBottom: '1rem',
+            border: '1px solid rgba(220, 53, 69, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: '#ff6b6b', marginBottom: '1rem' }}>
+              Error: {String(error)}
+            </div>
+            <button 
+              onClick={() => setError("")}
+              style={{
+                padding: '0.5rem 1rem',
+                background: 'transparent',
+                border: '1px solid rgba(220, 53, 69, 0.5)',
+                borderRadius: '0.5rem',
+                color: '#ff6b6b',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(220, 53, 69, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+  
+        {/* Content Area */}
+        {!account ? (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '1rem',
+            padding: '3rem',
+            textAlign: 'center',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: 'rgba(187, 247, 208, 0.8)', fontSize: '1.2rem' }}>
+              Please connect your wallet to view organizations
+            </div>
+          </div>
+        ) : loading ? (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '1rem',
+            padding: '3rem',
+            textAlign: 'center',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: 'rgba(187, 247, 208, 0.8)', fontSize: '1.2rem' }}>
+              Loading organizations...
+            </div>
+          </div>
+        ) : organizations.length === 0 ? (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '1rem',
+            padding: '3rem',
+            textAlign: 'center',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ color: 'rgba(187, 247, 208, 0.8)', fontSize: '1.2rem', marginBottom: '1rem' }}>
+              No organizations found
+            </div>
+            <div style={{ color: 'rgba(187, 247, 208, 0.6)', fontSize: '0.875rem' }}>
+              Organizations are loaded directly from the handler object. 
+              Check the debug info to see the structure.
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Stats Header */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '1rem',
+              padding: '1.5rem',
+              marginBottom: '2rem',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              backdropFilter: 'blur(10px)',
+              textAlign: 'center'
+            }}>
+              <div style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 'bold', 
+                color: '#10b981',
+                marginBottom: '0.5rem'
+              }}>
+                {organizations.length}
+              </div>
+              <div style={{ color: 'rgba(187, 247, 208, 0.7)' }}>
+                Organization{organizations.length !== 1 ? 's' : ''} Found
+              </div>
+            </div>
+  
+            {/* Organizations Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              {organizations.map((org) => (
+                <div 
+                  key={org.organisation_id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '1rem',
+                    padding: '1.5rem',
+                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(16, 185, 129, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.2)';
+                  }}
+                  onClick={() => setSelectedOrg(org)}
+                >
+                  {/* Organization Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #10b981, #34d399)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.5rem',
+                      fontWeight: 'bold',
+                      color: 'white'
+                    }}>
+                      {org.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', marginBottom: '0.25rem' }}>
+                        {org.name}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(187, 247, 208, 0.6)' }}>
+                        {formatAddress(org.owner)}
+                      </div>
+                    </div>
+                  </div>
+  
+                  {/* Stats Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>
+                        {org.carbon_credits}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(187, 247, 208, 0.7)' }}>
+                        Carbon Credits
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                         {getReputationBadge(org.reputation_score)}
-                        <Text>({org.reputation_score})</Text>
-                      </Flex>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text size="1">
-                        Lent: {org.times_lent} times
-                        <br />
-                        Borrowed: {org.times_borrowed} times
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Button 
-                        size="1" 
-                        onClick={() => setSelectedOrg(org)}
-                      >
-                        View Details
-                      </Button>
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
-          </Card>
-        </>
-      )}
-
-      {/* Organization Details Modal */}
-      <Dialog.Root open={!!selectedOrg} onOpenChange={(open) => !open && setSelectedOrg(null)}>
-        <Dialog.Content style={{ maxWidth: 600 }}>
-          {selectedOrg && (
-            <>
-              <Dialog.Title>
-                <Flex align="center" gap="2">
-                  <Avatar
-                    fallback={selectedOrg.name.charAt(0)}
-                    radius="full"
-                    size="3"
-                  />
-                  {selectedOrg.name}
-                </Flex>
-              </Dialog.Title>
-              
-              <Box mb="4">
-                <Text weight="bold">Description:</Text>
-                <Text>{selectedOrg.description}</Text>
-              </Box>
-
-              <Grid columns="3" gap="3" mb="4">
-                <Box>
-                  <Text weight="bold">Owner:</Text>
-                  <Text>{formatAddress(selectedOrg.owner)}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Wallet Address:</Text>
-                  <Text>{formatAddress(selectedOrg.wallet_address)}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Carbon Credits:</Text>
-                  <Text>{selectedOrg.carbon_credits}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Reputation Score:</Text>
-                  <Flex align="center" gap="2">
-                    {getReputationBadge(selectedOrg.reputation_score)}
-                    <Text>{selectedOrg.reputation_score}/100</Text>
-                  </Flex>
-                </Box>
-                <Box>
-                  <Text weight="bold">Times Lent:</Text>
-                  <Text>{selectedOrg.times_lent}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Total Lent:</Text>
-                  <Text>{selectedOrg.total_lent}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Total Returned:</Text>
-                  <Text>{selectedOrg.total_returned}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Times Borrowed:</Text>
-                  <Text>{selectedOrg.times_borrowed}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Total Borrowed:</Text>
-                  <Text>{selectedOrg.total_borrowed}</Text>
-                </Box>
-                <Box>
-                  <Text weight="bold">Emissions:</Text>
-                  <Text>{selectedOrg.emissions}</Text>
-                </Box>
-              </Grid>
-
-              <Flex gap="3" mt="4" justify="end">
-                <Dialog.Close>
-                  <Button variant="soft" color="gray">
-                    Close
-                  </Button>
-                </Dialog.Close>
-              </Flex>
-            </>
-          )}
-        </Dialog.Content>
-      </Dialog.Root>
-    </Container>
+                        <span style={{ color: 'white', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                          {org.reputation_score}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: 'rgba(187, 247, 208, 0.7)' }}>
+                        Reputation Score
+                      </div>
+                    </div>
+                  </div>
+  
+                  {/* Activity Stats */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between',
+                    padding: '1rem',
+                    background: 'rgba(0, 0, 0, 0.2)',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.875rem'
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#34d399', fontWeight: 'bold' }}>{org.times_lent}</div>
+                      <div style={{ color: 'rgba(187, 247, 208, 0.6)' }}>Lent</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#34d399', fontWeight: 'bold' }}>{org.times_borrowed}</div>
+                      <div style={{ color: 'rgba(187, 247, 208, 0.6)' }}>Borrowed</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+  
+        {/* Organization Details Modal */}
+        <Dialog.Root open={!!selectedOrg} onOpenChange={(open) => !open && setSelectedOrg(null)}>
+          <Dialog.Content style={{ 
+            maxWidth: 700,
+            background: 'linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #000000 100%)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            borderRadius: '1rem',
+            color: 'white'
+          }}>
+            {selectedOrg && (
+              <>
+                <Dialog.Title>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #10b981, #34d399)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.5rem',
+                      fontWeight: 'bold',
+                      color: 'white'
+                    }}>
+                      {selectedOrg.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>
+                        {selectedOrg.name}
+                      </div>
+                    </div>
+                  </div>
+                </Dialog.Title>
+                
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ fontWeight: 'bold', color: '#34d399', marginBottom: '0.5rem' }}>Description:</div>
+                  <div style={{ color: 'rgba(187, 247, 208, 0.8)' }}>{selectedOrg.description}</div>
+                </div>
+  
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                  gap: '1rem', 
+                  marginBottom: '2rem'
+                }}>
+                  {[
+                    { label: 'Owner', value: formatAddress(selectedOrg.owner) },
+                    { label: 'Wallet Address', value: formatAddress(selectedOrg.wallet_address) },
+                    { label: 'Carbon Credits', value: selectedOrg.carbon_credits },
+                    { label: 'Reputation Score', value: `${selectedOrg.reputation_score}/100` },
+                    { label: 'Times Lent', value: selectedOrg.times_lent },
+                    { label: 'Total Lent', value: selectedOrg.total_lent },
+                    { label: 'Total Returned', value: selectedOrg.total_returned },
+                    { label: 'Times Borrowed', value: selectedOrg.times_borrowed },
+                    { label: 'Total Borrowed', value: selectedOrg.total_borrowed },
+                    { label: 'Emissions', value: selectedOrg.emissions }
+                  ].map((item, index) => (
+                    <div key={index} style={{
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '0.5rem',
+                      padding: '1rem',
+                      border: '1px solid rgba(16, 185, 129, 0.2)'
+                    }}>
+                      <div style={{ fontWeight: 'bold', color: '#34d399', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                        {item.label}:
+                      </div>
+                      <div style={{ color: 'white' }}>
+                        {item.label === 'Reputation Score' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            {getReputationBadge(selectedOrg.reputation_score)}
+                            <span>{item.value}</span>
+                          </div>
+                        ) : (
+                          item.value
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+  
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <Dialog.Close>
+                    <button style={{
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: '0.5rem',
+                      color: '#34d399',
+                      cursor: 'pointer',
+                      fontSize: '1rem',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                      e.currentTarget.style.borderColor = '#10b981';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    }}>
+                      Close
+                    </button>
+                  </Dialog.Close>
+                </div>
+              </>
+            )}
+          </Dialog.Content>
+        </Dialog.Root>
+      </div>
+    </div>
   );
 }
