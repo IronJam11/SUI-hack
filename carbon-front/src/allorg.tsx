@@ -1,30 +1,22 @@
 import { 
   useCurrentAccount, 
-  useSignAndExecuteTransaction, 
+  
   useSuiClientQuery,
   useSuiClient
 } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
+
 import { 
-  Container, 
-  Flex, 
-  Heading, 
-  Text, 
-  Button, 
-  Card,
-  Table,
+  
   Badge,
-  Box,
+  
   Dialog,
-  Grid,
-  Avatar,
-  Code
+  
 } from "@radix-ui/themes";
 import { useState, useEffect } from "react";
 
 // Replace with your actual package ID and handler object ID
 const ORGANIZATION_HANDLER_ID = "0x3e93f9c3174505789f34825c4833e59adeb9b3f68adb8bfd53ecdcf0b61b75db";
-const PACKAGE_ID = "0x0514cb5817179ac60a31c8b552c252928745a35048e189e0a857ea2a8487000a";
+
 
 type Organization = {
   organisation_id: string;

@@ -6,22 +6,20 @@ import {
 } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 import { 
-  Container, 
-  Flex, 
-  Heading, 
+   
+   
+  
   Text, 
-  Button, 
-  Card,
-  Table,
+ 
   Badge,
   Box,
-  Separator,
+  
   Dialog,
   AlertDialog,
-  Grid
+  
 } from "@radix-ui/themes";
 import { useState, useEffect } from "react";
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 
 // Replace with your actual package IDs
 const ORGANIZATION_HANDLER_ID = "0x3e93f9c3174505789f34825c4833e59adeb9b3f68adb8bfd53ecdcf0b61b75db";
@@ -59,7 +57,7 @@ export function ClaimsList() {
   const suiClient = useSuiClient();
 
   // Use Sui client query to get the ClaimHandler object
-  const { data: claimsData, refetch: refetchClaims } = useSuiClientQuery(
+  const { data: claimsData } = useSuiClientQuery(
     "getObject",
     {
       id: CLAIM_HANDLER_ID,

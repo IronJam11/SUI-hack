@@ -1,7 +1,7 @@
 // App.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
+import { Box, Flex, Heading } from "@radix-ui/themes";
 import { ConnectButton } from "@mysten/dapp-kit";
 import { OrganisationProfile } from "./createorg";
 import { CreateClaim } from "./createclaim";
